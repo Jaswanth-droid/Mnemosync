@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Dashboard - Mnemosyne</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0A0B14 0%, #12141F 50%, #0A0B14 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(18, 20, 31, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header h1 {
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            margin: 16px 0;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s;
+        }
+
+        .section-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .section-content {
+            padding: 16px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .section-content.expanded {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .item:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .person-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .person-image {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+        }
+
+        .person-info {
+            flex: 1;
+        }
+
+        .person-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .person-relation {
+            color: #818cf8;
+            font-size: 14px;
+        }
+
+        .person-date {
+            color: #9ca3af;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .delete-btn {
+            background: rgba(239, 68, 68, 0.2);
+            border: none;
+            color: #f87171;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px;
+            color: #9ca3af;
+        }
+
+        .conversation-item {
+            cursor: pointer;
+        }
+
+        .conversation-content {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .conversation-content.expanded {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .transcript-line {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .speaker {
+            color: #818cf8;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>💭 Memory Dashboard</h1>
+    </div>
+
+    <div class="container">
+        <!-- Important Dates -->
+        <div class="section">
+            <div class="section-header" onclick="toggleSection('dates')">
+                <div class="section-title">
+                    <span>📅</span>
+                    <span>Important Dates</span>
+                    <span class="badge" style="background: rgba(236, 72, 153, 0.2); color: #f9a8d4"
+                        id="dates-count">0</span>
+                </div>
+                <span id="dates-arrow">▼</span>
+            </div>
+            <div class="section-content expanded" id="dates-content">
+                <div class="empty-state">No dates recorded yet</div>
+            </div>
+        </div>
+
+        <!-- Past Conversations -->
+        <div class="section">
+            <div class="section-header" onclick="toggleSection('conversations')">
+                <div class="section-title">
+                    <span>💬</span>
+                    <span>Past Conversations</span>
+                    <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd"
+                        id="conversations-count">0</span>
+                </div>
+                <span id="conversations-arrow">▼</span>
+            </div>
+            <div class="section-content" id="conversations-content">
+                <div class="empty-state">No conversations recorded yet</div>
+            </div>
+        </div>
+
+        <!-- People -->
+        <div class="section">
+            <div class="section-header" onclick="toggleSection('people')">
+                <div class="section-title">
+                    <span>👥</span>
+                    <span>People</span>
+                    <span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #86efac"
+                        id="people-count">0</span>
+                </div>
+                <span id="people-arrow">▼</span>
+            </div>
+            <div class="section-content" id="people-content">
+                <div class="empty-state">No people recorded yet</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { openDB } from 'https://cdn.jsdelivr.net/npm/idb@8/+esm';
+
+        const DB_NAME = 'mnemosyne-memory';
+        const DB_VERSION = 1;
+
+        let db;
+
+        async function initDB() {
+            db = await openDB(DB_NAME, DB_VERSION, {
+                upgrade(db) {
+                    if (!db.objectStoreNames.contains('dates')) {
+                        const datesStore = db.createObjectStore('dates', { keyPath: 'id' });
+                        datesStore.createIndex('by-date', 'date');
+                    }
+                    if (!db.objectStoreNames.contains('conversations')) {
+                        const convoStore = db.createObjectStore('conversations', { keyPath: 'id' });
+                        convoStore.createIndex('by-timestamp', 'timestamp');
+                    }
+                    if (!db.objectStoreNames.contains('people')) {
+                        const peopleStore = db.createObjectStore('people', { keyPath: 'id' });
+                        peopleStore.createIndex('by-name', 'name');
+                        peopleStore.createIndex('by-lastSeen', 'lastSeen');
+                    }
+                },
+            });
+            loadAllData();
+        }
+
+        function toggleSection(section) {
+            const content = document.getElementById(`${section}-content`);
+            const arrow = document.getElementById(`${section}-arrow`);
+            content.classList.toggle('expanded');
+            arrow.textContent = content.classList.contains('expanded') ? '▲' : '▼';
+        }
+
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        async function loadAllData() {
+            await Promise.all([loadDates(), loadConversations(), loadPeople()]);
+        }
+
+        async function loadDates() {
+            const dates = await db.getAll('dates');
+            document.getElementById('dates-count').textContent = dates.length;
+            const container = document.getElementById('dates-content');
+
+            if (dates.length === 0) {
+                container.innerHTML = '<div class="empty-state">No dates recorded yet</div>';
+                return;
+            }
+
+            container.innerHTML = dates.map(date => `
+                <div class="item">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 4px;">${date.event}</div>
+                        <div style="font-size: 14px; color: #9ca3af;">${date.date}</div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteDate('${date.id}')">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        async function loadConversations() {
+            const conversations = await db.getAll('conversations');
+            const sorted = conversations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            document.getElementById('conversations-count').textContent = sorted.length;
+            const container = document.getElementById('conversations-content');
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No conversations recorded yet</div>';
+                return;
+            }
+
+            container.innerHTML = sorted.map((convo, idx) => `
+                <div class="item conversation-item" onclick="toggleConversation(${idx})">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">${convo.participants.join(', ')}</div>
+                        <div style="font-size: 12px; color: #9ca3af; margin-bottom: 8px;">${formatDate(convo.timestamp)}</div>
+                        <div style="font-size: 14px; color: #d1d5db;">${convo.summary}</div>
+                        <div class="conversation-content" id="convo-${idx}">
+                            ${convo.fullTranscript.map(entry => `
+                                <div class="transcript-line">
+                                    <span class="speaker">${entry.speaker}:</span>
+                                    <span style="color: #d1d5db;">${entry.text}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteConversation('${convo.id}')">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        async function loadPeople() {
+            const people = await db.getAll('people');
+            const sorted = people.sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen));
+            document.getElementById('people-count').textContent = sorted.length;
+            const container = document.getElementById('people-content');
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No people recorded yet</div>';
+                return;
+            }
+
+            container.innerHTML = sorted.map(person => `
+                <div class="item person-item">
+                    <img src="${person.faceImage || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect fill="%236366f1" width="64" height="64"/></svg>'}" 
+                         alt="${person.name}" 
+                         class="person-image" />
+                    <div class="person-info">
+                        <div class="person-name">${person.name}</div>
+                        <div class="person-relation">${person.relation}</div>
+                        <div class="person-date">Last seen: ${formatDate(person.lastSeen)}</div>
+                    </div>
+                    <button class="delete-btn" onclick="deletePerson('${person.id}')">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        window.toggleConversation = function (idx) {
+            const content = document.getElementById(`convo-${idx}`);
+            content.classList.toggle('expanded');
+        };
+
+        window.deleteDate = async function (id) {
+            if (confirm('Delete this date?')) {
+                await db.delete('dates', id);
+                loadDates();
+            }
+        };
+
+        window.deleteConversation = async function (id) {
+            if (confirm('Delete this conversation?')) {
+                await db.delete('conversations', id);
+                loadConversations();
+            }
+        };
+
+        window.deletePerson = async function (id) {
+            if (confirm('Delete this person?')) {
+                await db.delete('people', id);
+                loadPeople();
+            }
+        };
+
+        // Auto-refresh every 5 seconds
+        setInterval(loadAllData, 5000);
+
+        // Initialize
+        initDB();
+    </script>
+</body>
+
+</html>
