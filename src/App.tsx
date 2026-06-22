@@ -6,17 +6,19 @@ import { getGeminiModel, analyzeScene } from './gemini';
 import IntroSequence from './IntroSequence';
 import VideoBackground from './VideoBackground';
 import NeuralBackground from './NeuralBackground';
-import ConversationRecorder from './ConversationRecorder';
+import ConversationRecorder, { parseDateFromText } from './ConversationRecorder';
 import VoiceAssistant from './VoiceAssistant';
 import MemoryDashboard from './MemoryDashboard';
+import TaskModal from './TaskModal';
 
 function App() {
     const [status, setStatus] = useState('Standby');
     const [apiKey, setApiKey] = useState('AIzaSyBOSp25QjJRHC4MRGJOHzNx6ItTEIQ7zZY');
+    const [hasActiveAlert, setHasActiveAlert] = useState(false);
     const [isActivated, setIsActivated] = useState(false);
     const [primaryModel, setPrimaryModel] = useState<any>(null);
     const [backupModel, setBackupModel] = useState<any>(null);
-    const [identifiedPerson, setIdentifiedPerson] = useState<null | { name: string; relation: string; summary: string }>(null);
+    const [identifiedPerson, setIdentifiedPerson] = useState<null | { id?: string; name: string; relation: string; summary: string; faceImage?: string }>(null);
     const [nudges, setNudges] = useState<string[]>([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const isAnalyzingRef = useRef(false);
@@ -25,9 +27,38 @@ function App() {
     const [history, setHistory] = useState('');
     const historyRef = useRef(history);
     const [memoryLog, setMemoryLog] = useState<{ time: string; event: string }[]>([]);
-    const [tasks, setTasks] = useState<{ id: string; time: string; event: string; type: 'date' | 'action' }[]>([]);
+    const [tasks, setTasks] = useState<{ id: string; time: string; event: string; type: 'date' | 'action', description?: string, hasExactTime?: boolean, rawDate?: string }[]>([]);
     const lastSummaryRef = useRef(""); // To prevent duplicate logs
     const [isAutoScanEnabled, setIsAutoScanEnabled] = useState(false); // Default to manual to save quota
+    const [selectedTask, setSelectedTask] = useState<any>(null);
+
+    const loadTasks = async () => {
+        const { getAllDates } = await import('./memoryDatabase');
+        try {
+            const datesData = await getAllDates();
+            const mappedTasks = datesData.map(d => {
+                const parsedDate = new Date(d.createdAt || d.date);
+                return {
+                    id: d.id,
+                    time: parsedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    event: d.event,
+                    type: d.type === 'appointment' ? ('date' as const) : ('action' as const),
+                    description: d.description,
+                    hasExactTime: d.hasExactTime,
+                    rawDate: d.date
+                };
+            });
+            setTasks(mappedTasks);
+        } catch (err) {
+            console.error("Error loading tasks on mount:", err);
+        }
+    };
+
+    // Load tasks from IndexedDB on startup to synchronize with the Calendar
+    useEffect(() => {
+        loadTasks();
+    }, []); 
+    
     const [quotaHit, setQuotaHit] = useState(false);
     const [lastVisitorInfo, setLastVisitorInfo] = useState<{ name: string; relation: string } | null>(null);
     const [lastConversationSummary, setLastConversationSummary] = useState<string>(''); // Store last conversation for recall
@@ -46,6 +77,8 @@ function App() {
     useEffect(() => {
         historyRef.current = history;
     }, [history]);
+
+
 
     const webcamRef = useRef<Webcam>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -127,15 +160,47 @@ function App() {
             }
 
             if (result && result.personIdentified) {
+                const { getPersonByName, addPerson, generateId } = await import('./memoryDatabase');
+                
+                let dbPersonId: string | undefined = undefined;
+                let currentName = result.name || 'Unknown';
+                
+                // Try to find if they exist (Gemini might have guessed a name)
+                if (currentName !== 'Unknown') {
+                    const existing = await getPersonByName(currentName);
+                    if (existing) {
+                        dbPersonId = existing.id;
+                    }
+                }
+                
+                // If they don't exist in DB, create a new record
+                if (!dbPersonId) {
+                    dbPersonId = generateId();
+                    currentName = currentName === 'Unknown' ? `Unknown Visitor #${dbPersonId.substring(0,4)}` : currentName;
+                    
+                    console.log(`[Vision] Creating new database entry for ${currentName}`);
+                    await addPerson({
+                        id: dbPersonId,
+                        name: currentName,
+                        relation: result.relation || 'New Contact',
+                        faceImage: `data:image/jpeg;base64,${base64}`,
+                        firstSeen: new Date(),
+                        lastSeen: new Date(),
+                        conversationContext: result.summary || 'First meeting.'
+                    });
+                }
+
                 setIdentifiedPerson({
-                    name: result.name || 'Unknown',
+                    id: dbPersonId,
+                    name: currentName,
                     relation: result.relation || 'New Contact',
                     summary: result.summary || 'No previous conversation found.',
+                    faceImage: `data:image/jpeg;base64,${base64}`
                 });
 
                 const timestamp = new Date().toLocaleTimeString();
-                setHistory(prev => `${prev}\nSeen at ${timestamp}: Identified ${result.name} (${result.relation}). Summary: ${result.summary}`);
-                setMemoryLog(prev => [{ time: timestamp, event: `Identified ${result.name}` }, ...prev].slice(0, 5));
+                setHistory(prev => `${prev}\nSeen at ${timestamp}: Identified ${currentName} (${result.relation}). Summary: ${result.summary}`);
+                setMemoryLog(prev => [{ time: timestamp, event: `Identified ${currentName}` }, ...prev].slice(0, 5));
                 lastSummaryRef.current = ""; // Reset summary suppression after identification
             } else if (result && result.summary) {
                 // Suppress duplicate "No person" logs
@@ -180,6 +245,7 @@ function App() {
             clearTimeout(initialTimeout);
         };
     }, [primaryModel, backupModel, runAnalysis, cameraReady, isAutoScanEnabled]);
+
 
     const handleManualAnalysis = () => {
         if (primaryModel && !isAnalyzing && cameraReady) {
@@ -278,6 +344,8 @@ function App() {
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         className="nudge-item group"
+                                        onClick={() => setSelectedTask(task)}
+                                        style={{ cursor: 'pointer' }}
                                     >
                                         <div className="nudge-dot" style={{ background: task.type === 'action' ? '#ef4444' : '#34d399' }} />
                                         <div className="flex-1">
@@ -287,7 +355,16 @@ function App() {
                                             </p>
                                         </div>
                                         <button
-                                            onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))}
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                const { deleteDate } = await import('./memoryDatabase');
+                                                try {
+                                                    await deleteDate(task.id);
+                                                    setTasks(prev => prev.filter(t => t.id !== task.id));
+                                                } catch (err) {
+                                                    console.error("Failed to delete task:", err);
+                                                }
+                                            }}
                                             className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all"
                                         >
                                             <ShieldCheck size={14} className="text-dim hover:text-white" />
@@ -590,12 +667,13 @@ function App() {
                             <ConversationRecorder
                                 primaryModel={primaryModel}
                                 backupModel={backupModel}
-                                identifiedPerson={identifiedPerson}
+                                captureScreenshot={captureScreenshot}
                                 onDateDetected={(event) => {
                                     const now = new Date();
                                     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                     const type = event.includes('📅') ? 'date' : 'action';
                                     const cleanEvent = event.replace(/^[📅✅]\s*/, '');
+                                    const parsedDate = parseDateFromText(cleanEvent);
 
                                     setTasks(prev => {
                                         if (prev.some(t => t.event === cleanEvent)) return prev;
@@ -603,7 +681,8 @@ function App() {
                                             id: Math.random().toString(36).substr(2, 9),
                                             time: timeStr,
                                             event: cleanEvent,
-                                            type
+                                            type,
+                                            rawDate: parsedDate.toISOString()
                                         }];
                                     });
 
@@ -615,6 +694,7 @@ function App() {
                                     if (visitorInfo) {
                                         setLastVisitorInfo(visitorInfo);
                                     }
+                                    loadTasks(); // Refresh tasks to get deep extracted data
                                 }}
                                 patientName="User"
                             />
@@ -683,6 +763,15 @@ function App() {
                 isOpen={isDashboardOpen}
                 onClose={() => setIsDashboardOpen(false)}
             />
+
+            {/* Task Detail Modal */}
+            {selectedTask && (
+                <TaskModal 
+                    task={selectedTask} 
+                    onClose={() => setSelectedTask(null)} 
+                    onUpdate={loadTasks} 
+                />
+            )}
         </>
     );
 }

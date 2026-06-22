@@ -24,14 +24,51 @@ export default function MemoryDashboard({ isOpen, onClose }: MemoryDashboardProp
     const [activeTab, setActiveTab] = useState<TabType>('dates');
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [hoveredDay, setHoveredDay] = useState<number | null>(null);
+    const [selectedConversation, setSelectedConversation] = useState<ConversationRecord | null>(null);
+    const [selectedPerson, setSelectedPerson] = useState<PersonRecord | null>(null);
+
+    // Track if we've already auto-navigated for this open session
+    const [hasAutoNavigated, setHasAutoNavigated] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
+            setHasAutoNavigated(false); // Reset on each open
             loadAllData();
             const interval = setInterval(loadAllData, 5000);
             return () => clearInterval(interval);
         }
     }, [isOpen]);
+
+    // Auto-navigate calendar to the nearest event month when data loads
+    useEffect(() => {
+        if (dates.length > 0 && !hasAutoNavigated) {
+            const now = new Date();
+            // Find the nearest upcoming event date
+            const parsedDates = dates
+                .map(d => {
+                    const parsed = new Date(d.date);
+                    return isNaN(parsed.getTime()) ? new Date(d.createdAt) : parsed;
+                })
+                .filter(d => !isNaN(d.getTime()))
+                .sort((a, b) => {
+                    // Sort by distance from now (prefer future dates)
+                    const distA = a.getTime() - now.getTime();
+                    const distB = b.getTime() - now.getTime();
+                    // Future dates first, then closest past dates
+                    if (distA >= 0 && distB >= 0) return distA - distB;
+                    if (distA >= 0) return -1;
+                    if (distB >= 0) return 1;
+                    return distB - distA;
+                });
+
+            if (parsedDates.length > 0) {
+                const targetDate = parsedDates[0];
+                setCurrentMonth(new Date(targetDate.getFullYear(), targetDate.getMonth(), 1));
+                setHasAutoNavigated(true);
+                console.log('[Calendar] Auto-navigated to:', targetDate.toLocaleDateString());
+            }
+        }
+    }, [dates, hasAutoNavigated]);
 
     const loadAllData = async () => {
         const [datesData, convosData, peopleData] = await Promise.all([
@@ -168,7 +205,7 @@ export default function MemoryDashboard({ isOpen, onClose }: MemoryDashboardProp
         const hasValidImg = person.faceImage && !imgError;
 
         return (
-            <div style={{
+            <div onClick={() => setSelectedPerson(person)} style={{
                 padding: '12px', borderRadius: '12px',
                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
                 textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -295,6 +332,118 @@ export default function MemoryDashboard({ isOpen, onClose }: MemoryDashboardProp
                 <div style={{ width: '160px' }}></div>
             </div>
 
+            {selectedPerson ? (
+                /* Profile View */
+                <div style={{ padding: '16px 32px', height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <button onClick={() => setSelectedPerson(null)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px' }}>
+                            <ArrowLeft size={20} />
+                        </button>
+                        <h2 style={{ margin: 0, fontSize: '20px', color: 'white' }}>Profile Details</h2>
+                    </div>
+
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', padding: '24px' }}>
+                        <div style={{
+                            width: '120px', height: '120px', borderRadius: '50%',
+                            background: selectedPerson.faceImage ? 'transparent' : 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'white', fontWeight: 'bold', fontSize: '48px', overflow: 'hidden',
+                            border: '4px solid rgba(59, 130, 246, 0.4)', boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
+                        }}>
+                            {selectedPerson.faceImage ? (
+                                <img src={selectedPerson.faceImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                selectedPerson.name[0] || 'U'
+                            )}
+                        </div>
+
+                        <div style={{ textAlign: 'center' }}>
+                            <h2 style={{ margin: 0, fontSize: '28px', color: 'white', fontWeight: 'bold' }}>{selectedPerson.name}</h2>
+                            <p style={{ margin: '8px 0 0 0', fontSize: '16px', color: '#f472b6', fontWeight: 500 }}>{selectedPerson.relation}</p>
+                        </div>
+
+                        <div style={{
+                            width: '100%', maxWidth: '500px', background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '24px',
+                            display: 'flex', flexDirection: 'column', gap: '16px'
+                        }}>
+                            <div>
+                                <h3 style={{ fontSize: '14px', color: '#9ca3af', margin: '0 0 8px 0' }}>Context</h3>
+                                <p style={{ fontSize: '16px', color: 'white', margin: 0 }}>{selectedPerson.conversationContext}</p>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+                                <div>
+                                    <h3 style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 4px 0' }}>First Seen</h3>
+                                    <p style={{ fontSize: '14px', color: 'white', margin: 0 }}>{new Date(selectedPerson.firstSeen).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                    <h3 style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 4px 0' }}>Last Seen</h3>
+                                    <p style={{ fontSize: '14px', color: 'white', margin: 0 }}>{formatTimeAgo(selectedPerson.lastSeen)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : selectedConversation ? (
+                /* Chat View */
+                <div style={{ padding: '16px 32px', height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
+                    {(() => {
+                        const participantName = selectedConversation.participants[0] || 'Unknown';
+                        const participant = people.find(p => p.name.trim().toLowerCase() === participantName.trim().toLowerCase());
+                        return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                <button onClick={() => setSelectedConversation(null)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px' }}>
+                                    <ArrowLeft size={20} />
+                                </button>
+                                <div style={{
+                                    width: '48px', height: '48px', borderRadius: '50%',
+                                    background: participant?.faceImage ? 'transparent' : 'linear-gradient(135deg, #ec4899, #8b5cf6)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'white', fontWeight: 'bold', fontSize: '18px', overflow: 'hidden'
+                                }}>
+                                    {participant?.faceImage ? (
+                                        <img src={participant.faceImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        participantName[0] || 'C'
+                                    )}
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: '18px', color: 'white' }}>{participantName}</h2>
+                                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#9ca3af' }}>{selectedConversation.summary}</p>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '16px' }}>
+                        {selectedConversation.convoImage && (
+                            <div style={{ alignSelf: 'center', marginBottom: '16px', width: '100%', maxWidth: '600px' }}>
+                                <img src={selectedConversation.convoImage} alt="Scene capture" style={{ width: '100%', borderRadius: '16px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                <p style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>Captured Scene</p>
+                            </div>
+                        )}
+                        {selectedConversation.fullTranscript.map((entry, idx) => {
+                            const isUser = entry.speaker.toLowerCase() === 'you';
+                            return (
+                                <div key={idx} style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+                                    <div style={{
+                                        maxWidth: '70%', padding: '12px 16px',
+                                        borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                                        background: isUser ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'rgba(255,255,255,0.1)',
+                                        color: 'white', fontSize: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+                                    }}>
+                                        <p style={{ margin: 0, fontWeight: 500, lineHeight: '1.5' }}>{entry.text}</p>
+                                        <p style={{ margin: '6px 0 0 0', fontSize: '10px', color: isUser ? 'rgba(255,255,255,0.7)' : '#9ca3af', textAlign: isUser ? 'right' : 'left' }}>
+                                            {formatTimeAgo(new Date(entry.timestamp))}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            ) : (
+                <>
             {/* Tab Navigation */}
             <div style={{ padding: '16px 32px', display: 'flex', justifyContent: 'center', gap: '16px' }}>
                 {tabs.map((tab) => (
@@ -468,14 +617,44 @@ export default function MemoryDashboard({ isOpen, onClose }: MemoryDashboardProp
 
                     {/* Upcoming Events */}
                     <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                        <p style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px' }}>Upcoming</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '100px', overflowY: 'auto' }}>
-                            {dates.slice(0, 3).map((date) => (
-                                <div key={date.id} style={{ fontSize: '11px', padding: '8px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                    <p style={{ color: 'white', fontWeight: 500, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{date.event}</p>
-                                    <p style={{ color: '#6b7280', margin: '4px 0 0 0' }}>{date.date}</p>
-                                </div>
-                            ))}
+                        <p style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px' }}>Upcoming Events</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '140px', overflowY: 'auto' }}>
+                            {dates
+                                .map(d => {
+                                    const parsed = new Date(d.date);
+                                    const eventDate = isNaN(parsed.getTime()) ? new Date(d.createdAt) : parsed;
+                                    return { ...d, _parsed: eventDate };
+                                })
+                                .sort((a, b) => a._parsed.getTime() - b._parsed.getTime())
+                                .slice(0, 5)
+                                .map((date) => {
+                                    const readableDate = date._parsed.toLocaleDateString('en-US', {
+                                        weekday: 'short',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    });
+                                    const isInCurrentView = date._parsed.getMonth() === currentMonth.getMonth() && date._parsed.getFullYear() === currentMonth.getFullYear();
+                                    return (
+                                        <div
+                                            key={date.id}
+                                            onClick={() => setCurrentMonth(new Date(date._parsed.getFullYear(), date._parsed.getMonth(), 1))}
+                                            style={{
+                                                fontSize: '11px', padding: '8px', borderRadius: '8px', cursor: 'pointer',
+                                                background: isInCurrentView ? 'rgba(236,72,153,0.15)' : 'rgba(255,255,255,0.05)',
+                                                border: isInCurrentView ? '1px solid rgba(236,72,153,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                        >
+                                            <p style={{ color: 'white', fontWeight: 500, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                📅 {date.event}
+                                            </p>
+                                            <p style={{ color: isInCurrentView ? '#f472b6' : '#9ca3af', margin: '4px 0 0 0', fontWeight: 500 }}>
+                                                {readableDate}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
                             {dates.length === 0 && <p style={{ fontSize: '11px', color: '#6b7280' }}>No upcoming events</p>}
                         </div>
                     </div>
@@ -496,11 +675,11 @@ export default function MemoryDashboard({ isOpen, onClose }: MemoryDashboardProp
                             </div>
                         ) : (
                             conversations.slice(0, 5).map((convo) => (
-                                <div key={convo.id} style={{
+                                <div key={convo.id} onClick={() => setSelectedConversation(convo)} style={{
                                     padding: '12px', borderRadius: '12px',
                                     background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                                    display: 'flex', gap: '12px', alignItems: 'flex-start', cursor: 'pointer'
-                                }}>
+                                    display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer', transition: 'background 0.2s'
+                                }} className="hover:bg-white/[0.08]">
                                     {(() => {
                                         const participantName = convo.participants[0];
                                         const participant = people.find(p => p.name.trim().toLowerCase() === participantName.trim().toLowerCase());
@@ -538,7 +717,10 @@ export default function MemoryDashboard({ isOpen, onClose }: MemoryDashboardProp
                                             {convo.summary}
                                         </p>
                                     </div>
-                                    <span style={{ fontSize: '10px', color: '#6b7280', flexShrink: 0 }}>{formatTimeAgo(convo.timestamp)}</span>
+                                    {convo.convoImage && (
+                                        <img src={convo.convoImage} alt="Scene" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }} />
+                                    )}
+                                    {!convo.convoImage && <span style={{ fontSize: '10px', color: '#6b7280', flexShrink: 0 }}>{formatTimeAgo(convo.timestamp)}</span>}
                                 </div>
                             ))
                         )}
@@ -635,6 +817,8 @@ export default function MemoryDashboard({ isOpen, onClose }: MemoryDashboardProp
                     </div>
                 </div>
             </div>
+            </>
+            )}
         </div>
     );
 }

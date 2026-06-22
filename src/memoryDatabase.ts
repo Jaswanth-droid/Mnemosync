@@ -1,4 +1,4 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { openDB, DBSchema, IDBPDatabase, deleteDB } from 'idb';
 
 // Database schema definition
 interface MemoryDB extends DBSchema {
@@ -23,6 +23,8 @@ export interface ImportantDate {
     id: string;
     date: string;
     event: string;
+    description?: string;
+    hasExactTime?: boolean;
     type: 'meeting' | 'appointment' | 'reminder';
     createdAt: Date;
 }
@@ -39,6 +41,7 @@ export interface ConversationRecord {
     participants: string[];
     summary: string;
     fullTranscript: ConversationEntry[];
+    convoImage?: string;
 }
 
 export interface PersonRecord {
@@ -56,10 +59,19 @@ const DB_NAME = 'mnemosync-memory';
 const DB_VERSION = 1;
 
 let dbInstance: IDBPDatabase<MemoryDB> | null = null;
+let hasClearedData = false; // Flag to ensure we only wipe once per page load
 
 // Initialize database
 export async function initDatabase(): Promise<IDBPDatabase<MemoryDB>> {
     if (dbInstance) return dbInstance;
+
+    // The user requested that newly added data should not exist on refresh.
+    // We clear the DB completely on the first initialization per session.
+    if (!hasClearedData) {
+        console.log('[Database] Wiping database for fresh start on refresh...');
+        await deleteDB(DB_NAME);
+        hasClearedData = true;
+    }
 
     dbInstance = await openDB<MemoryDB>(DB_NAME, DB_VERSION, {
         upgrade(db) {
@@ -91,6 +103,19 @@ export async function initDatabase(): Promise<IDBPDatabase<MemoryDB>> {
 
 export async function addDate(date: ImportantDate): Promise<void> {
     const db = await initDatabase();
+    
+    // Deduplicate: check if an event with the same description on the same calendar day already exists
+    const existing = await db.getAll('dates');
+    const isDuplicate = existing.some(d => 
+        d.event.trim().toLowerCase() === date.event.trim().toLowerCase() &&
+        new Date(d.date).toDateString() === new Date(date.date).toDateString()
+    );
+    
+    if (isDuplicate) {
+        console.log('[DB] Duplicate event ignored:', date.event);
+        return;
+    }
+    
     await db.add('dates', date);
 }
 
@@ -104,11 +129,21 @@ export async function deleteDate(id: string): Promise<void> {
     await db.delete('dates', id);
 }
 
+export async function updateDate(date: ImportantDate): Promise<void> {
+    const db = await initDatabase();
+    await db.put('dates', date);
+}
+
 // ===== CONVERSATIONS OPERATIONS =====
 
 export async function addConversation(conversation: ConversationRecord): Promise<void> {
     const db = await initDatabase();
     await db.add('conversations', conversation);
+}
+
+export async function updateConversation(conversation: ConversationRecord): Promise<void> {
+    const db = await initDatabase();
+    await db.put('conversations', conversation);
 }
 
 export async function getAllConversations(): Promise<ConversationRecord[]> {
