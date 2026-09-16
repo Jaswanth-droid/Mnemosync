@@ -10,13 +10,13 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
         
         body {
-            background-color: #020617;
+            background-color: #f8fafc;
             background-image: 
-                radial-gradient(ellipse at 0% 0%, rgba(14, 165, 233, 0.2) 0%, transparent 50%),
-                radial-gradient(ellipse at 100% 0%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.15) 0%, transparent 60%);
+                radial-gradient(ellipse at 0% 0%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 100% 0%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.1) 0%, transparent 60%);
             background-attachment: fixed;
-            color: #f1f5f9;
+            color: #1e293b;
             padding: 32px 40px;
             min-height: 100vh;
             overflow-x: hidden;
@@ -27,8 +27,8 @@
             content: '';
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==');
-            opacity: 0.4;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMwMDAiIGZpbGwtb3BhY2l0eT0iMC4wMiIvPjwvc3ZnPg==');
+            opacity: 0.6;
             pointer-events: none;
             z-index: -1;
         }
@@ -40,8 +40,8 @@
             100% { transform: translateY(0px); }
         }
         @keyframes glow {
-            0%, 100% { box-shadow: 0 0 15px rgba(14, 165, 233, 0.15); }
-            50% { box-shadow: 0 0 30px rgba(14, 165, 233, 0.4); }
+            0%, 100% { box-shadow: 0 0 15px rgba(14, 165, 233, 0.1); }
+            50% { box-shadow: 0 0 30px rgba(14, 165, 233, 0.2); }
         }
 
         .header {
@@ -49,7 +49,7 @@
             align-items: center;
             justify-content: space-between;
             padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
             margin-bottom: 24px;
             flex-wrap: wrap;
             gap: 16px;
@@ -58,14 +58,14 @@
             font-size: 28px;
             font-weight: 800;
             letter-spacing: -0.5px;
-            color: #ffffff;
-            text-shadow: 0 0 20px rgba(255,255,255,0.4), 0 0 40px rgba(14, 165, 233, 0.2);
+            color: #0f172a;
+            text-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);
             display: flex;
             align-items: center;
             gap: 12px;
         }
         .subtitle {
-            color: #94a3b8;
+            color: #64748b;
             font-size: 14px;
             margin-top: 6px;
             font-weight: 500;
@@ -74,12 +74,12 @@
         .nav-tabs {
             display: flex;
             gap: 8px;
-            background: rgba(255,255,255,0.02);
+            background: rgba(255,255,255,0.6);
             backdrop-filter: blur(12px);
             padding: 6px;
             border-radius: 999px; /* Pill */
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.8);
         }
         .nav-tab-btn {
             border: none;
@@ -95,19 +95,19 @@
             gap: 8px;
         }
         .nav-tab-btn.active {
-            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+            background: linear-gradient(135deg, #0284c7, #4f46e5);
             backdrop-filter: blur(8px);
-            color: #020617;
-            box-shadow: 0 4px 14px rgba(255,255,255, 0.2), inset 0 1px 1px rgba(255,255,255,1);
-            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+            border: 1px solid rgba(0,0,0,0.1);
         }
         .nav-tab-btn.inactive {
             background: transparent;
-            color: #94a3b8;
+            color: #64748b;
         }
         .nav-tab-btn.inactive:hover {
-            color: #f8fafc;
-            background: rgba(255,255,255,0.08);
+            color: #0f172a;
+            background: rgba(0,0,0,0.04);
             transform: scale(1.02);
         }
 
@@ -119,27 +119,27 @@
             border-radius: 9999px;
             font-size: 12px;
             font-weight: 700;
-            background: rgba(74, 222, 128, 0.1);
-            border: 1px solid rgba(74, 222, 128, 0.2);
-            color: #4ade80;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            color: #15803d;
         }
         .badge-pulse {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #4ade80;
+            background: #22c55e;
             animation: pulse 1.5s infinite;
-            box-shadow: 0 0 8px #4ade80;
+            box-shadow: 0 0 8px rgba(34,197,94,0.6);
         }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.4); } }
-        @keyframes danger-pulse { 0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); border-color: rgba(239, 68, 68, 0.5); } 50% { box-shadow: 0 0 35px rgba(239, 68, 68, 0.6); border-color: #ef4444; } }
+        @keyframes danger-pulse { 0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); } 50% { box-shadow: 0 0 35px rgba(239, 68, 68, 0.3); border-color: #ef4444; } }
 
         .patient-bar {
-            background: rgba(15, 23, 42, 0.45);
+            background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-top: 1px solid rgba(255,255,255,0.25);
+            border: 1px solid rgba(255,255,255,0.9);
+            border-top: 1px solid rgba(255,255,255,1);
             border-radius: 999px; /* Pill Shape */
             padding: 12px 28px;
             margin-bottom: 32px;
@@ -148,7 +148,7 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 16px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.1);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.06), inset 0 1px 1px rgba(255,255,255,0.8);
             animation: glow 6s infinite alternate;
         }
 
@@ -159,29 +159,29 @@
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(32px);
             -webkit-backdrop-filter: blur(32px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-top: 1px solid rgba(255,255,255,0.2);
-            border-left: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.8);
+            border-top: 1px solid rgba(255,255,255,1);
+            border-left: 1px solid rgba(255,255,255,1);
             border-radius: 32px;
             padding: 32px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.05);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05), inset 0 1px 1px rgba(255,255,255,0.8);
             margin-bottom: 24px;
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
         }
         .card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.08), inset 0 1px 2px rgba(255,255,255,1);
+            border-color: rgba(255,255,255,0.9);
         }
         .card-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 24px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
             padding-bottom: 16px;
         }
         .card-title {
@@ -190,41 +190,41 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            color: #f8fafc;
+            color: #0f172a;
             letter-spacing: 0.3px;
         }
 
         .alert-card {
             border: 1.5px solid #ef4444;
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(15, 23, 42, 0.65));
+            background: linear-gradient(135deg, rgba(254, 226, 226, 0.9), rgba(255, 255, 255, 0.85));
             backdrop-filter: blur(16px);
             animation: danger-pulse 2s infinite;
         }
 
         .quick-cue-btn {
-            background: rgba(255,255,255,0.03);
+            background: rgba(255,255,255,0.7);
             backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-top: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-top: 1px solid rgba(255,255,255,1);
             border-radius: 20px;
             padding: 16px 20px;
             text-align: left;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            color: #f1f5f9;
+            color: #1e293b;
         }
         .quick-cue-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(99, 102, 241, 0.3);
             transform: translateY(-4px) scale(1.01);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255,255,255,0.2);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06), inset 0 1px 1px rgba(255,255,255,0.8);
         }
 
         .btn-action {
-            background: rgba(255, 255, 255, 0.9);
+            background: linear-gradient(135deg, #0284c7, #4f46e5);
             backdrop-filter: blur(12px);
-            color: #020617;
-            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
             padding: 12px 24px;
             border-radius: 999px; /* Pill */
             font-weight: 800;
@@ -233,19 +233,19 @@
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            box-shadow: 0 4px 15px rgba(255,255,255,0.1);
+            box-shadow: 0 4px 15px rgba(2,132,199,0.2);
         }
         .btn-action:hover {
             transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 8px 25px rgba(255,255,255, 0.2), inset 0 1px 1px rgba(255,255,255,1);
-            background: #ffffff;
+            box-shadow: 0 8px 25px rgba(2,132,199, 0.3), inset 0 1px 1px rgba(255,255,255,0.4);
+            background: linear-gradient(135deg, #0369a1, #4338ca);
         }
 
         .log-box {
-            background: rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.5);
             backdrop-filter: blur(24px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-top: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-top: 1px solid rgba(255,255,255,0.8);
             border-radius: 20px;
             padding: 18px;
             max-height: 180px;
@@ -254,14 +254,15 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            box-shadow: inset 0 4px 20px rgba(0,0,0,0.3);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+            color: #334155;
         }
 
         /* Emergency Distress Pop-up Modal & Live User Camera */
         #distressPopupModal {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.3);
             backdrop-filter: blur(30px);
             -webkit-backdrop-filter: blur(30px);
             z-index: 999999;
@@ -276,16 +277,16 @@
             to { opacity: 1; transform: scale(1) translateY(0); backdrop-filter: blur(30px); }
         }
         .distress-modal-card {
-            background: rgba(20, 20, 25, 0.65);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(40px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-top: 1px solid rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 1);
+            border-top: 1px solid rgba(255, 255, 255, 1);
             border-radius: 36px;
             width: 100%;
             max-width: 1200px;
             max-height: 96vh;
             overflow-y: auto;
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), inset 0 1px 2px rgba(255,255,255,0.3);
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255,255,255,1);
             padding: 32px 36px;
             display: flex;
             flex-direction: column;
@@ -295,7 +296,7 @@
             position: relative;
             width: 100%;
             height: 320px;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.8);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(239, 68, 68, 0.4);
             border-radius: 16px;
@@ -309,10 +310,10 @@
             position: absolute;
             top: 16px;
             left: 16px;
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #fca5a5;
+            color: #ef4444;
             font-size: 11px;
             font-weight: 800;
             padding: 6px 12px;
@@ -321,7 +322,7 @@
             align-items: center;
             gap: 8px;
             z-index: 10;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         .camera-live-dot {
             width: 8px;
@@ -329,38 +330,42 @@
             border-radius: 50%;
             background: #ef4444;
             animation: pulse 1s infinite;
-            box-shadow: 0 0 8px #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
         }
 
         input[type="text"], textarea {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #0f172a;
             border-radius: 10px;
             padding: 12px 14px;
             font-family: inherit;
             transition: all 0.3s ease;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
         input[type="text"]:focus, textarea:focus {
             outline: none;
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(56, 189, 248, 0.5);
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2), inset 0 2px 4px rgba(0,0,0,0.2);
+            background: #ffffff;
+            border-color: rgba(56, 189, 248, 0.8);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2), inset 0 2px 4px rgba(0,0,0,0.02);
         }
         .activity-card-item {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
             padding: 12px 14px;
             display: flex;
             gap: 12px;
             align-items: flex-start;
             transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            color: #334155;
         }
         .activity-card-item:hover {
-            background: rgba(255, 255, 255, 0.07);
-            border-color: rgba(56, 189, 248, 0.3);
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         .activity-icon-badge {
             width: 34px;
@@ -371,6 +376,7 @@
             justify-content: center;
             font-size: 16px;
             flex-shrink: 0;
+            background: rgba(14, 165, 233, 0.1);
         }
     </style>
 
@@ -404,13 +410,13 @@
             </div>
             <div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <h2 style="font-size: 18px; font-weight: 800; color: white;">Mrs. Sunita Sharma</h2>
-                    <span style="font-size: 11px; background: rgba(244,63,94,0.2); color: #fda4af; border: 1px solid rgba(244,63,94,0.4); padding: 2px 9px; border-radius: 999px; font-weight: 700;">Moderate Alzheimer's (CDR 1.0)</span>
+                    <h2 style="font-size: 18px; font-weight: 800; color: #0f172a;">Mrs. Sunita Sharma</h2>
+                    <span style="font-size: 11px; background: rgba(244,63,94,0.1); color: #e11d48; border: 1px solid rgba(244,63,94,0.2); padding: 2px 9px; border-radius: 999px; font-weight: 700;">Moderate Alzheimer's (CDR 1.0)</span>
                 </div>
-                <div style="display: flex; gap: 16px; margin-top: 5px; font-size: 12px; color: #94a3b8; flex-wrap: wrap;">
-                    <span>👤 Caregiver: <strong style="color: #cbd5e1;">Ananya Sharma (Daughter)</strong></span>
-                    <span>📍 Safe Zone: <strong style="color: #38bdf8;">Home (14 Park Lane)</strong></span>
-                    <span>🕒 Routine: <strong style="color: #cbd5e1;">Morning Walk (06:30 - 07:15 AM)</strong></span>
+                <div style="display: flex; gap: 16px; margin-top: 5px; font-size: 12px; color: #64748b; flex-wrap: wrap;">
+                    <span>👤 Caregiver: <strong style="color: #334155;">Ananya Sharma (Daughter)</strong></span>
+                    <span>📍 Safe Zone: <strong style="color: #0284c7;">Home (14 Park Lane)</strong></span>
+                    <span>🕒 Routine: <strong style="color: #334155;">Morning Walk (06:30 - 07:15 AM)</strong></span>
                 </div>
             </div>
         </div>
@@ -435,42 +441,42 @@
                 <div class="card-header" style="margin-bottom: 12px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 20px;">🚨</span>
-                        <h2 class="card-title" style="color: #fca5a5; font-size: 18px;" id="incidentTitle">
+                        <h2 class="card-title" style="color: #dc2626; font-size: 18px;" id="incidentTitle">
                             PATIENT WALK DISORIENTATION ALERT
                         </h2>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button onclick="toggleChimeMute()" id="muteChimeBtn" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer;">
+                        <button onclick="toggleChimeMute()" id="muteChimeBtn" style="background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); color: #334155; font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer;">
                             🔊 Sound Alert
                         </button>
-                        <span class="badge" style="background: rgba(239,68,68,0.3); color: #fca5a5; font-size: 11px;">Immediate Attention Required</span>
+                        <span class="badge" style="background: rgba(239,68,68,0.1); color: #b91c1c; border: 1px solid rgba(239,68,68,0.2); font-size: 11px;">Immediate Attention Required</span>
                     </div>
                 </div>
 
-                <div style="background: rgba(0,0,0,0.35); border-radius: 10px; padding: 14px; margin-bottom: 14px; border: 1px solid rgba(239,68,68,0.3);">
-                    <div style="font-size: 13px; color: #f1f5f9; line-height: 1.6;">
-                        <strong style="color: #f87171;">Situation:</strong> Mrs. Sunita stepped outside for a walk alone and <strong>forgot where to go</strong>. She paused on the sidewalk and tapped the assistance trigger on her HUD.
+                <div style="background: rgba(255,255,255,0.5); border-radius: 10px; padding: 14px; margin-bottom: 14px; border: 1px solid rgba(239,68,68,0.3);">
+                    <div style="font-size: 13px; color: #1e293b; line-height: 1.6;">
+                        <strong style="color: #dc2626;">Situation:</strong> Mrs. Sunita stepped outside for a walk alone and <strong>forgot where to go</strong>. She paused on the sidewalk and tapped the assistance trigger on her HUD.
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; font-size: 12px;">
-                        <div style="background: rgba(255,255,255,0.04); padding: 8px 10px; border-radius: 6px;">
-                            <span style="color: #94a3b8;">Trigger Source:</span><br>
-                            <strong style="color: #38bdf8;" id="triggerSourceText">Touch Button: "I Forgot Where To Go"</strong>
+                        <div style="background: rgba(255,255,255,0.7); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.05);">
+                            <span style="color: #64748b;">Trigger Source:</span><br>
+                            <strong style="color: #0284c7;" id="triggerSourceText">Touch Button: "I Forgot Where To Go"</strong>
                         </div>
-                        <div style="background: rgba(255,255,255,0.04); padding: 8px 10px; border-radius: 6px;">
-                            <span style="color: #94a3b8;">Current Location:</span><br>
-                            <strong style="color: #f87171;" id="incidentLocationText">14th Cross Rd (72m North-East, Near Park)</strong>
+                        <div style="background: rgba(255,255,255,0.7); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.05);">
+                            <span style="color: #64748b;">Current Location:</span><br>
+                            <strong style="color: #dc2626;" id="incidentLocationText">14th Cross Rd (72m North-East, Near Park)</strong>
                         </div>
                     </div>
-                    <div style="margin-top: 10px; background: rgba(239,68,68,0.12); padding: 8px 12px; border-radius: 6px; font-size: 12px; color: #fecdd3; display: flex; align-items: center; gap: 8px;">
+                    <div style="margin-top: 10px; background: rgba(239,68,68,0.08); padding: 8px 12px; border-radius: 6px; font-size: 12px; color: #991b1b; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(239,68,68,0.2);">
                         <span>⚠️</span>
                         <span><strong>Missing Essentials:</strong> Keys left on console table • Walking stick not carried</span>
                     </div>
-                    <div id="patientSpeechQuoteBox" style="margin-top: 10px; background: rgba(56,189,248,0.1); border-left: 3px solid #38bdf8; padding: 8px 12px; border-radius: 4px; font-size: 13px; color: #bae6fd;">
+                    <div id="patientSpeechQuoteBox" style="margin-top: 10px; background: rgba(14,165,233,0.08); border-left: 3px solid #0ea5e9; padding: 8px 12px; border-radius: 4px; font-size: 13px; color: #0369a1;">
                         🗣️ <em>"I went for a walk and forgot where to go. Please help me get back."</em>
                     </div>
                 </div>
 
-                <div style="font-size: 13px; color: #e2e8f0; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <div style="font-size: 13px; color: #334155; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
                     <span>🎙️</span> Choose Directional Guidance to Speak to Patient's HUD:
                 </div>
             </div>
@@ -490,47 +496,47 @@
                         <div style="font-weight: 700; color: #38bdf8; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
                             <span>🧭</span> 1. "Walk Guidance — Turn Back"
                         </div>
-                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                        <div style="font-size: 12px; color: #475569; line-height: 1.4;">
                             "Sunita, you are on your walk on 14th Cross. Look left for the bakery. Turn around 180° towards our blue gate..."
                         </div>
                     </div>
 
                     <div class="quick-cue-btn" onclick="sendVoiceAssist(presetMessages[1], 'Wait For Me')">
-                        <div style="font-weight: 700; color: #34d399; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <div style="font-weight: 700; color: #059669; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
                             <span>🏃</span> 2. "Stay Put — Coming Outside"
                         </div>
-                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                        <div style="font-size: 12px; color: #475569; line-height: 1.4;">
                             "Mom, please stay right where you are on the sidewalk. You are safe. I am stepping outside right now to walk with you."
                         </div>
                     </div>
 
                     <div class="quick-cue-btn" onclick="sendVoiceAssist(presetMessages[2], 'Forgot Keys')">
-                        <div style="font-weight: 700; color: #f59e0b; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <div style="font-weight: 700; color: #d97706; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
                             <span>🔑</span> 3. "Keys are Safe Inside"
                         </div>
-                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                        <div style="font-size: 12px; color: #475569; line-height: 1.4;">
                             "Don't worry Mrs. Sunita, your keys and walking stick are safe on the hallway table. Pause and wait for me."
                         </div>
                     </div>
 
                     <div class="quick-cue-btn" onclick="sendVoiceAssist(presetMessages[3], 'Soothing Calming')">
-                        <div style="font-weight: 700; color: #c084fc; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <div style="font-weight: 700; color: #7c3aed; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
                             <span>🍵</span> 4. "Warm Tea Reassurance"
                         </div>
-                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                        <div style="font-size: 12px; color: #475569; line-height: 1.4;">
                             "Everything is alright Sunita. Take three deep breaths. Let's head back inside to your armchair and have warm tea."
                         </div>
                     </div>
                 </div>
 
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
-                    <label style="font-size: 12px; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 8px;">
+                <div style="background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                    <label style="font-size: 12px; color: #475569; font-weight: 600; display: block; margin-bottom: 8px;">
                         Custom Caregiver Voice Guidance:
                     </label>
                     <div style="display: flex; gap: 10px;">
                         <input type="text" id="customVoiceInput" 
                                value="Mrs. Sunita, this is Ananya. Please stay right there, I am walking out to meet you right now."
-                               style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: white; font-size: 13px; outline: none;"
+                               style="flex: 1; background: #ffffff; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; padding: 10px 14px; color: #0f172a; font-size: 13px; outline: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"
                                onkeydown="if(event.key === 'Enter') sendCustomVoice()">
                         <button class="btn-action" onclick="sendCustomVoice()">
                             <span>📢</span> Speak to HUD
@@ -538,10 +544,10 @@
                     </div>
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
                         <button id="pttBtn" onmousedown="startPTT()" onmouseup="stopPTT()" ontouchstart="startPTT()" ontouchend="stopPTT()"
-                                style="background: rgba(244,63,94,0.15); border: 1px solid rgba(244,63,94,0.4); color: #fda4af; font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;">
+                                style="background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.2); color: #e11d48; font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;">
                             <span>🎙️</span> Hold to Speak Live (PTT)
                         </button>
-                        <span id="voiceStatusMsg" style="font-size: 12px; color: #34d399; font-weight: 600;">
+                        <span id="voiceStatusMsg" style="font-size: 12px; color: #059669; font-weight: 600;">
                             Voice channel ready
                         </span>
                     </div>
@@ -549,15 +555,15 @@
 
                 <div>
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">Recent Voice Guidance Log:</span>
+                        <span style="font-size: 12px; color: #475569; font-weight: 600;">Recent Voice Guidance Log:</span>
                         <span style="font-size: 11px; color: #64748b;">Delivered via Web Speech & WebSocket</span>
                     </div>
                     <div class="log-box" id="voiceLogContainer">
-                        <div style="color: #38bdf8;">
+                        <div style="color: #0284c7;">
                             <span style="font-weight: bold;">[06:44 AM]</span> 📢 <strong>Ananya:</strong> "Sunita, you are on your morning walk on 14th Cross. The blue bakery is to your left. Turn around and walk 50 meters back to our gate..."
                         </div>
-                        <div style="color: #94a3b8;">
-                            <span style="font-weight: bold;">[06:38 AM]</span> ⚠️ <strong>System:</strong> Patient exited front gate alone. Geofence boundary crossed.
+                        <div style="color: #475569;">
+                            <span style="font-weight: bold;">[06:38 AM]</span> ⚠️ <strong style="color: #d97706;">System:</strong> Patient exited front gate alone. Geofence boundary crossed.
                         </div>
                     </div>
                 </div>
@@ -569,11 +575,11 @@
                     <h2 class="card-title">
                         <span>📜</span> Significant Past Events & Completed Activities
                     </h2>
-                    <span style="font-size: 11px; background: rgba(52, 211, 153, 0.15); color: #34d399; padding: 3px 8px; border-radius: 999px; font-weight: 700;">
+                    <span style="font-size: 11px; background: rgba(52, 211, 153, 0.15); color: #059669; padding: 3px 8px; border-radius: 999px; font-weight: 700; border: 1px solid rgba(52, 211, 153, 0.3);">
                         Live Daily Log
                     </span>
                 </div>
-                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
+                <p style="font-size: 12px; color: #475569; margin-bottom: 12px;">
                     Comprehensive timeline of medication, family reminiscence, nutrition, and therapy sessions completed by patient.
                 </p>
                 <div id="mainActivitiesList" style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto;">
@@ -595,11 +601,11 @@
                     <div style="width: 40px; height: 40px; border-radius: 10px; background: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 18px rgba(239,68,68,0.7); animation: pulse 1s infinite;">🚨</div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <h2 style="font-size: 18px; font-weight: 800; color: #fee2e2; letter-spacing: -0.02em;">URGENT PATIENT DISTRESS SIGNAL ACTIVE</h2>
-                            <span style="background: rgba(239,68,68,0.3); border: 1px solid #ef4444; color: #fca5a5; font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 800; white-space: nowrap;">CRITICAL HUD ALERT</span>
+                            <h2 style="font-size: 18px; font-weight: 800; color: #7f1d1d; letter-spacing: -0.02em;">URGENT PATIENT DISTRESS SIGNAL ACTIVE</h2>
+                            <span style="background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #b91c1c; font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 800; white-space: nowrap;">CRITICAL HUD ALERT</span>
                         </div>
-                        <p style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">
-                            Transmitted immediately from Patient AI HUD (<span id="modalTimestampText">Just Now</span>) • Location: <strong style="color: #38bdf8;" id="modalLocationText">Living Room (Front Chair)</strong>
+                        <p style="font-size: 12px; color: #475569; margin-top: 2px;">
+                            Transmitted immediately from Patient AI HUD (<span id="modalTimestampText">Just Now</span>) • Location: <strong style="color: #0284c7;" id="modalLocationText">Living Room (Front Chair)</strong>
                         </p>
                     </div>
                 </div>
@@ -607,31 +613,31 @@
                     <button onclick="resolveDistressSignal()" style="background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
                         <span>✓</span> Acknowledge &amp; Resolve
                     </button>
-                    <button onclick="closeDistressModal()" style="background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.18); padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">
+                    <button onclick="closeDistressModal()" style="background: rgba(0,0,0,0.05); color: #475569; border: 1px solid rgba(0,0,0,0.1); padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">
                         ✕ Minimize
                     </button>
                 </div>
             </div>
 
             <!-- ── HERO: Full-Width Live Camera Feed ── -->
-            <div style="position: relative; width: 100%; height: 460px; background: #000; border: 2px solid rgba(239,68,68,0.65); border-radius: 14px; overflow: hidden; box-shadow: 0 0 40px rgba(239,68,68,0.3), inset 0 0 30px rgba(0,0,0,0.7);">
+            <div style="position: relative; width: 100%; height: 460px; background: #000; border: 2px solid rgba(239,68,68,0.4); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 40px rgba(239,68,68,0.2), inset 0 0 30px rgba(0,0,0,0.7);">
                 <!-- LIVE badge -->
-                <div style="position: absolute; top: 12px; left: 12px; z-index: 20; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); border: 1px solid rgba(239,68,68,0.6); color: #fca5a5; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+                <div style="position: absolute; top: 12px; left: 12px; z-index: 20; background: rgba(255,255,255,0.85); backdrop-filter: blur(6px); border: 1px solid rgba(239,68,68,0.6); color: #dc2626; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 6px; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                     <span style="width: 7px; height: 7px; border-radius: 50%; background: #ef4444; display: inline-block; animation: pulse 1s infinite;"></span>
                     LIVE USER AI CAMERA (PORT 5173)
                 </div>
                 <!-- Timestamp badge top-right -->
-                <div style="position: absolute; top: 12px; right: 12px; z-index: 20; background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); color: #94a3b8; font-size: 11px; padding: 3px 10px; border-radius: 6px;" id="cameraFrameTime">Connecting…</div>
+                <div style="position: absolute; top: 12px; right: 12px; z-index: 20; background: rgba(255,255,255,0.85); backdrop-filter: blur(6px); color: #334155; font-size: 11px; padding: 3px 10px; border-radius: 6px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" id="cameraFrameTime">Connecting…</div>
 
                 <!-- Actual camera image — fills entire box -->
                 <img id="modalCameraFeed" src="" alt="Live patient camera" style="width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; inset: 0;" />
 
                 <!-- Placeholder shown while no frame -->
-                <div id="cameraFallbackView" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: #94a3b8;">
-                    <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(239,68,68,0.12); border: 2px dashed rgba(239,68,68,0.45); display: flex; align-items: center; justify-content: center; font-size: 36px;">📷</div>
+                <div id="cameraFallbackView" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: #cbd5e1;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(239,68,68,0.15); border: 2px dashed rgba(239,68,68,0.5); display: flex; align-items: center; justify-content: center; font-size: 36px;">📷</div>
                     <div style="text-align: center;">
-                        <div style="font-size: 15px; font-weight: 700; color: #e2e8f0;">Connecting to Patient Live Camera…</div>
-                        <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Webcam frames stream automatically from the Mnemosync HUD</div>
+                        <div style="font-size: 15px; font-weight: 700; color: #f8fafc;">Connecting to Patient Live Camera…</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Webcam frames stream automatically from the Mnemosync HUD</div>
                     </div>
                 </div>
 
@@ -647,19 +653,19 @@
             <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px;">
 
                 <!-- Voice Console -->
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
-                    <div style="font-size: 13px; font-weight: 700; color: #cbd5e1; display: flex; align-items: center; justify-content: space-between;">
+                <div style="background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+                    <div style="font-size: 13px; font-weight: 700; color: #475569; display: flex; align-items: center; justify-content: space-between;">
                         <span>🎙️ Speak Reassurance Directly to Patient:</span>
-                        <span id="modalVoiceStatus" style="font-size: 11px; color: #34d399;">Speaker Ready</span>
+                        <span id="modalVoiceStatus" style="font-size: 11px; color: #059669;">Speaker Ready</span>
                     </div>
                     <!-- Quick buttons -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px;">
                         <button onclick="sendVoiceAssist('Sunita, I am looking through your AI camera right now. You are safe. Sit still, I am right here.', 'Visual Reassurance')"
-                                style="background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3); color: #bae6fd; font-size: 11px; font-weight: 700; padding: 8px; border-radius: 6px; cursor: pointer; text-align: left;">
+                                style="background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; font-size: 11px; font-weight: 700; padding: 8px; border-radius: 6px; cursor: pointer; text-align: left;">
                             💬 "I can see you. Stay still."
                         </button>
                         <button onclick="sendVoiceAssist('Mom, take three deep breaths. I see you in the living room. Stay seated, I am coming right to you.', 'Calming Breath')"
-                                style="background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); color: #e9d5ff; font-size: 11px; font-weight: 700; padding: 8px; border-radius: 6px; cursor: pointer; text-align: left;">
+                                style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3); color: #6d28d9; font-size: 11px; font-weight: 700; padding: 8px; border-radius: 6px; cursor: pointer; text-align: left;">
                             💬 "Deep breaths. I'm coming."
                         </button>
                     </div>
@@ -667,34 +673,34 @@
                     <div style="display: flex; gap: 7px;">
                         <input type="text" id="modalVoiceInput"
                                value="Sunita, this is Ananya. I can see you on your camera. Everything is okay, do not panic."
-                               style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; padding: 8px 12px; color: white; font-size: 12px; outline: none;"
+                               style="flex: 1; background: #ffffff; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; padding: 8px 12px; color: #0f172a; font-size: 12px; outline: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"
                                onkeydown="if(event.key === 'Enter') sendModalCustomVoice()">
-                        <button onclick="sendModalCustomVoice()" style="background: linear-gradient(135deg, #0284c7, #6366f1); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap;">
+                        <button onclick="sendModalCustomVoice()" style="background: linear-gradient(135deg, #0284c7, #4f46e5); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap; box-shadow: 0 4px 10px rgba(2,132,199,0.2);">
                             📢 Speak
                         </button>
                     </div>
                     <!-- Patient reply -->
-                    <div id="modalReplyBox" style="display: none; background: rgba(34,197,94,0.12); border: 1.5px solid rgba(34,197,94,0.35); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #86efac;">
+                    <div id="modalReplyBox" style="display: none; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #047857;">
                         <div style="font-weight: 800; margin-bottom: 2px;">💬 Mnemosync Original Module Replied:</div>
-                        <div id="modalReplyContent" style="color: #f0fdf4;">Patient received &amp; heard guidance aloud.</div>
+                        <div id="modalReplyContent" style="color: #065f46;">Patient received &amp; heard guidance aloud.</div>
                     </div>
                 </div>
 
                 <!-- Significant Past Events -->
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 style="font-size: 13px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
+                        <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
                             <span>📜</span> Significant Past Events
                         </h3>
-                        <span style="font-size: 10px; background: rgba(56,189,248,0.15); color: #38bdf8; padding: 2px 7px; border-radius: 999px;">User AI Memory</span>
+                        <span style="font-size: 10px; background: rgba(14,165,233,0.1); color: #0284c7; border: 1px solid rgba(14,165,233,0.3); padding: 2px 7px; border-radius: 999px; font-weight: 700;">User AI Memory</span>
                     </div>
                     <p style="font-size: 11px; color: #64748b;">Recent tasks &amp; therapy completed prior to distress signal.</p>
                     <div id="modalActivitiesList" style="display: flex; flex-direction: column; gap: 7px; max-height: 200px; overflow-y: auto; padding-right: 2px;">
                         <!-- Injected via JavaScript -->
                     </div>
                     <!-- Vitals row -->
-                    <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 10px 12px; font-size: 12px; display: flex; gap: 16px; margin-top: auto;">
-                        <div><span style="color: #94a3b8;">Caregiver:</span><br><strong style="color: #cbd5e1;">Ananya Sharma (On Call)</strong></div>
+                    <div style="background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.05); border-radius: 8px; padding: 10px 12px; font-size: 12px; display: flex; gap: 16px; margin-top: auto;">
+                        <div><span style="color: #64748b;">Caregiver:</span><br><strong style="color: #1e293b;">Ananya Sharma (On Call)</strong></div>
                     </div>
                 </div>
 
@@ -784,7 +790,7 @@
             if (logBox) {
                 const now = new Date().toLocaleTimeString();
                 const item = document.createElement('div');
-                item.style.color = '#38bdf8';
+                item.style.color = '#0284c7';
                 item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> 📢 <strong>Ananya:</strong> "' + text + '"';
                 logBox.prepend(item);
             }
@@ -861,7 +867,7 @@
             if (logBox) {
                 const now = new Date().toLocaleTimeString();
                 const item = document.createElement('div');
-                item.style.color = '#38bdf8';
+                item.style.color = '#0284c7';
                 item.innerHTML = `<span style="font-weight: bold;">[${now}]</span> 📢 <strong>Ananya (Emergency):</strong> "${text}"`;
                 logBox.prepend(item);
             }
@@ -919,7 +925,7 @@
             if (logBox) {
                 const now = new Date().toLocaleTimeString();
                 const item = document.createElement('div');
-                item.style.color = '#f87171';
+                item.style.color = '#dc2626';
                 item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> 🚨 <strong>Alert:</strong> Patient tapped "I Forgot Where To Go" on HUD while outside.';
                 logBox.prepend(item);
             }
@@ -941,7 +947,7 @@
             if (logBox) {
                 const now = new Date().toLocaleTimeString();
                 const item = document.createElement('div');
-                item.style.color = '#f59e0b';
+                item.style.color = '#d97706';
                 item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> 🗣️ <strong>Patient Spoke:</strong> "Where do I go? I forgot which way is home."';
                 logBox.prepend(item);
             }
@@ -949,17 +955,17 @@
 
         function simulateSafeReturn() {
             const inc = document.getElementById('incidentCard');
-            inc.style.borderColor = 'rgba(16,185,129,0.5)';
+            inc.style.borderColor = 'rgba(16,185,129,0.3)';
             document.getElementById('incidentTitle').textContent = '✅ PATIENT SAFELY RETURNED HOME';
-            document.getElementById('incidentTitle').style.color = '#86efac';
+            document.getElementById('incidentTitle').style.color = '#16a34a';
             document.getElementById('triggerSourceText').textContent = 'Safely Arrived at Living Room';
             document.getElementById('patientSpeechQuoteBox').innerHTML = '🏡 <em>Patient is back inside the safe perimeter with family.</em>';
             document.getElementById('incidentLocationText').textContent = 'Living Room (Armchair)';
             document.getElementById('locStatusText').textContent = '🟢 Safe Zone (Indoor Living Room)';
             document.getElementById('radarDistanceText').textContent = 'Inside Safe Zone (0m)';
-            document.getElementById('radarDistanceText').style.color = '#34d399';
+            document.getElementById('radarDistanceText').style.color = '#16a34a';
             document.getElementById('dispText').textContent = '0m (Living Room)';
-            document.getElementById('dispText').style.color = '#34d399';
+            document.getElementById('dispText').style.color = '#16a34a';
             document.getElementById('speedCadenceText').textContent = 'Resting';
 
             const blip = document.getElementById('patientBlip');
@@ -969,7 +975,7 @@
             if (logBox) {
                 const now = new Date().toLocaleTimeString();
                 const item = document.createElement('div');
-                item.style.color = '#34d399';
+                item.style.color = '#059669';
                 item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> ✅ <strong>Resolved:</strong> Mrs. Sunita guided safely back to living room.';
                 logBox.prepend(item);
             }
@@ -1041,15 +1047,15 @@
                     </div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
-                            <strong style="color: #f1f5f9; font-size: 13px;">${act.title || act.event}</strong>
+                            <strong style="color: #0f172a; font-size: 13px;">${act.title || act.event}</strong>
                             <div style="display: flex; align-items: center; gap: 6px;">
-                                <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">🕒 ${act.time || act.scheduled || 'Today'}</span>
+                                <span style="font-size: 11px; color: #475569; font-weight: 600;">🕒 ${act.time || act.scheduled || 'Today'}</span>
                                 <span style="font-size: 10px; background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); padding: 1px 6px; border-radius: 999px; font-weight: 700;">
                                     ${act.status || 'Completed ✓'}
                                 </span>
                             </div>
                         </div>
-                        <div style="font-size: 11px; color: #94a3b8; margin-top: 4px; line-height: 1.4;">
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px; line-height: 1.4;">
                             ${act.details || act.description || 'Recorded in patient daily activity log'}
                         </div>
                     </div>
@@ -1144,7 +1150,7 @@
             if (logBox) {
                 const now = data.timestamp || new Date().toLocaleTimeString();
                 const item = document.createElement('div');
-                item.style.color = '#ef4444';
+                item.style.color = '#dc2626';
                 item.style.fontWeight = 'bold';
                 item.innerHTML = `<span style="font-weight: bold;">[${now}]</span> 🚨 <strong>URGENT DISTRESS:</strong> ${data.message || 'Distress signal received from patient AI HUD'}`;
                 logBox.prepend(item);
@@ -1190,7 +1196,7 @@
             if (logBox) {
                 const now = new Date().toLocaleTimeString();
                 const item = document.createElement('div');
-                item.style.color = '#34d399';
+                item.style.color = '#059669';
                 item.innerHTML = `<span style="font-weight: bold;">[${now}]</span> ✅ <strong>Resolved:</strong> Distress signal resolved by Caregiver Ananya.`;
                 logBox.prepend(item);
             }
@@ -1325,7 +1331,7 @@
             const logBox = document.getElementById('voiceLogContainer');
             if (logBox) {
                 const item = document.createElement('div');
-                item.style.color = '#34d399';
+                item.style.color = '#059669';
                 item.innerHTML = `<span style="font-weight: bold;">[${time}]</span> 🤖 <strong>Mnemosync HUD Reply:</strong> "${text}"`;
                 logBox.prepend(item);
             }
