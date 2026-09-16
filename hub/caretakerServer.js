@@ -260,6 +260,90 @@ app.post('/api/patient/assist-request-internal', (req, res) => {
     res.json({ success: true });
 });
 
+let latestCameraFrame = null;
+
+// ── Patient Distress Signal Endpoint (Immediate Emergency Alert with Camera & Event History) ──
+app.post('/api/patient/distress-signal', (req, res) => {
+    const {
+        patientName = 'Mrs. Sunita Sharma',
+        type = 'distress_emergency',
+        trigger = 'distress_button',
+        message = 'Patient triggered Emergency Distress Signal on Mnemosync HUD',
+        location = 'Living Room (Front Chair, 14 Park Lane)',
+        vitals = { heartRate: 104, stressLevel: 'High', agitation: 'Elevated' },
+        recentActivities = [],
+        cameraFrame = null,
+        timestamp = new Date().toLocaleTimeString()
+    } = req.body;
+
+    console.log(`[Caretaker 5174 Alert] 🚨🚨 URGENT DISTRESS SIGNAL from ${patientName}! Trigger: ${trigger}`);
+    if (cameraFrame) {
+        latestCameraFrame = cameraFrame;
+    }
+
+    const payload = {
+        patientName,
+        type,
+        trigger,
+        message,
+        location,
+        vitals,
+        recentActivities,
+        cameraFrame: cameraFrame || latestCameraFrame,
+        timestamp
+    };
+
+    if (io) {
+        io.emit('patient_distress_signal', payload);
+    }
+
+    // Cross forward to port 5000
+    try {
+        const postData = JSON.stringify(payload);
+        const request = http.request({
+            hostname: 'localhost',
+            port: 5000,
+            path: '/api/patient/distress-signal-internal',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        });
+        request.on('error', () => {});
+        request.write(postData);
+        request.end();
+    } catch (e) {}
+
+    res.json({ success: true, received: true, payload });
+});
+
+app.post('/api/patient/distress-signal-internal', (req, res) => {
+    if (req.body.cameraFrame) {
+        latestCameraFrame = req.body.cameraFrame;
+    }
+    if (io) {
+        io.emit('patient_distress_signal', req.body);
+    }
+    res.json({ success: true });
+});
+
+// Live camera frame stream from User AI
+app.post('/api/patient/camera-frame', (req, res) => {
+    const { frame } = req.body;
+    if (frame) {
+        latestCameraFrame = frame;
+        if (io) {
+            io.emit('patient_camera_frame', { frame, timestamp: Date.now() });
+        }
+    }
+    res.json({ success: true });
+});
+
+app.get('/api/patient/latest-camera', (_req, res) => {
+    res.json({ frame: latestCameraFrame, timestamp: Date.now() });
+});
+
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'Mnemosync Caretaker Portal', port: process.env.CARETAKER_PORT || 5174 });
 });
@@ -274,6 +358,15 @@ io.on('connection', (socket) => {
     socket.on('patient_assist_request', (data) => {
         console.log('[Caretaker Socket] Relaying patient_assist_request:', data);
         io.emit('patient_assist_request', data);
+    });
+    socket.on('patient_distress_signal', (data) => {
+        console.log('[Caretaker Socket] Relaying patient_distress_signal:', data);
+        if (data && data.cameraFrame) latestCameraFrame = data.cameraFrame;
+        io.emit('patient_distress_signal', data);
+    });
+    socket.on('patient_camera_frame', (data) => {
+        if (data && data.frame) latestCameraFrame = data.frame;
+        io.emit('patient_camera_frame', data);
     });
     socket.on('caregiver_voice_assist', (data) => {
         io.emit('caregiver_voice_assist', data);

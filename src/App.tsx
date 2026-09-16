@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { connectHub, emitFaceDetected, emitConversationEnded, onCognitiveAlert, emitPatientAssistRequest, CognitiveAlert } from './socketClient';
+import { connectHub, emitFaceDetected, emitConversationEnded, onCognitiveAlert, emitPatientAssistRequest, emitPatientDistressSignal, emitPatientCameraFrame, UserActivityEvent, CognitiveAlert } from './socketClient';
 import { 
     Brain, 
     User, 
@@ -198,6 +198,82 @@ function App() {
         setTimeout(() => {
             setIsWalkAssistSent(false);
         }, 20000);
+    }, []);
+
+    // ── Emergency Distress Signal & Live Camera Streaming to Caregiver ──
+    const [isDistressActive, setIsDistressActive] = useState(false);
+    const cameraStreamIntervalRef = useRef<any>(null);
+
+    const getSignificantUserEvents = useCallback((): UserActivityEvent[] => {
+        const routineEvents: UserActivityEvent[] = [
+            { title: "Morning Medication (Donepezil 5mg)", time: "08:00 AM", category: "Medication", status: "completed", details: "Taken with full glass of water in kitchen" },
+            { title: "Morning Garden Walk & Sunlight", time: "08:35 AM", category: "Exercise", status: "completed", details: "20 min walk around porch and garden" },
+            { title: "Breakfast & Reminiscence Chat", time: "09:15 AM", category: "Nutrition", status: "completed", details: "Viewed family album photos with visitor" },
+            { title: "Cognitive Word Recall Practice", time: "10:30 AM", category: "Therapy", status: "completed", details: "Scored 4/5 on animal naming exercise" }
+        ];
+
+        if (tasks && tasks.length > 0) {
+            const dynamicTasks = tasks.map(t => ({
+                title: t.event,
+                time: t.scheduled || t.time,
+                category: t.type === 'action' ? 'Action' : 'Appointment',
+                status: 'completed' as const,
+                details: t.description || t.details || 'Recorded in patient daily timeline'
+            }));
+            return [...dynamicTasks, ...routineEvents].slice(0, 6);
+        }
+        return routineEvents;
+    }, [tasks]);
+
+    const triggerEmergencyDistress = useCallback((triggerType: 'distress_button' | 'voice_query' = 'distress_button', customTranscript?: string) => {
+        setIsDistressActive(true);
+        const snap = webcamRef.current?.getScreenshot() || null;
+        const pastEvents = getSignificantUserEvents();
+
+        console.log('[App] 🚨 Triggering Emergency Distress Signal to Caregiver Portal...');
+        emitPatientDistressSignal({
+            patientName: 'Mrs. Sunita Sharma',
+            type: 'distress_emergency',
+            trigger: triggerType,
+            message: customTranscript || 'Patient activated Emergency Distress Signal on Mnemosync HUD',
+            location: 'Living Room (Armchair, 14 Park Lane)',
+            vitals: { heartRate: 108, stressLevel: 'Critical', agitation: 'Elevated' },
+            recentActivities: pastEvents,
+            cameraFrame: snap,
+            timestamp: new Date().toLocaleTimeString()
+        });
+
+        // Start live camera streaming to Caregiver every 1.5s
+        if (cameraStreamIntervalRef.current) clearInterval(cameraStreamIntervalRef.current);
+        cameraStreamIntervalRef.current = setInterval(() => {
+            const liveFrame = webcamRef.current?.getScreenshot() || null;
+            if (liveFrame) {
+                emitPatientCameraFrame(liveFrame);
+            }
+        }, 1500);
+
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance("Emergency distress signal sent to caregiver Ananya. She is viewing your live AI camera now. Please stay calm.");
+            u.rate = 0.92;
+            u.pitch = 1.05;
+            window.speechSynthesis.speak(u);
+        }
+    }, [getSignificantUserEvents]);
+
+    const cancelEmergencyDistress = useCallback(() => {
+        setIsDistressActive(false);
+        if (cameraStreamIntervalRef.current) {
+            clearInterval(cameraStreamIntervalRef.current);
+            cameraStreamIntervalRef.current = null;
+        }
+    }, []);
+
+    // Cleanup camera stream on unmount
+    useEffect(() => {
+        return () => {
+            if (cameraStreamIntervalRef.current) clearInterval(cameraStreamIntervalRef.current);
+        };
     }, []);
 
     // Cinematic Intro States
@@ -497,6 +573,30 @@ function App() {
                     </div>
                 )}
 
+                {/* Floating Emergency Distress Signal Active Banner */}
+                {isDistressActive && (
+                    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-red-950 via-rose-900 to-red-950 border-2 border-red-400 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-2xl backdrop-blur-xl animate-pulse">
+                        <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-2xl flex-shrink-0 animate-bounce">
+                            🚨
+                        </div>
+                        <div className="flex-1">
+                            <div className="text-xs font-bold text-red-300 uppercase tracking-wider flex items-center gap-2">
+                                <span>EMERGENCY DISTRESS ACTIVE — CAREGIVER ALERTED</span>
+                                <span className="bg-red-500/40 px-2 py-0.5 rounded text-[10px] text-white">Live Camera Streaming</span>
+                            </div>
+                            <div className="text-sm font-semibold text-white mt-1">
+                                "Caregiver Ananya is accessing your AI camera now to assist you. Past event logs transmitted. Stay right where you are."
+                            </div>
+                        </div>
+                        <button 
+                            onClick={cancelEmergencyDistress} 
+                            className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-white/30 cursor-pointer"
+                        >
+                            I'm Safe Now ✓
+                        </button>
+                    </div>
+                )}
+
                 {/* Top Pastel Navigation Bar */}
                 <header className="app-header w-full mb-3 px-4 py-2.5 rounded-2xl flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -533,6 +633,31 @@ function App() {
 
                     {/* Quick Action Badges */}
                     <div className="flex items-center gap-2">
+                        {/* EMERGENCY DISTRESS SIGNAL BUTTON */}
+                        <button
+                            onClick={() => triggerEmergencyDistress('distress_button')}
+                            className="quick-btn"
+                            style={{
+                                background: isDistressActive 
+                                    ? 'linear-gradient(135deg, #b91c1c, #ef4444)' 
+                                    : 'linear-gradient(135deg, #dc2626, #f87171)',
+                                color: 'white',
+                                border: '1.5px solid #fca5a5',
+                                fontWeight: 800,
+                                boxShadow: isDistressActive ? '0 0 20px rgba(239, 68, 68, 0.8)' : '0 4px 14px rgba(220, 38, 38, 0.45)',
+                                cursor: 'pointer',
+                                padding: '6px 16px',
+                                borderRadius: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                            }}
+                            title="Send immediate distress signal to Caregiver with live AI camera feed"
+                        >
+                            <span className="text-base animate-pulse">🚨</span>
+                            <span>{isDistressActive ? 'DISTRESS TRANSMITTING...' : 'DISTRESS SIGNAL'}</span>
+                        </button>
+
                         {/* Outside Walk Disorientation Assist Button */}
                         <button
                             onClick={triggerPatientWalkAssist}

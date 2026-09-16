@@ -105,6 +105,71 @@ export function emitPatientAssistRequest(payload: PatientAssistPayload) {
     } catch (e) {}
 }
 
+export interface UserActivityEvent {
+    title: string;
+    time: string;
+    category?: string;
+    details?: string;
+    status?: 'completed' | 'pending' | 'in-progress';
+}
+
+export interface DistressSignalPayload {
+    patientName?: string;
+    type?: 'distress_emergency' | 'walk_disorientation';
+    trigger?: 'distress_button' | 'voice_query' | 'fall_detection';
+    message?: string;
+    location?: string;
+    vitals?: {
+        heartRate: number;
+        stressLevel: string;
+        agitation: string;
+    };
+    recentActivities?: UserActivityEvent[];
+    cameraFrame?: string | null;
+    timestamp?: string;
+}
+
+export function emitPatientDistressSignal(payload: DistressSignalPayload) {
+    const fullPayload = {
+        patientName: payload.patientName || 'Mrs. Sunita Sharma',
+        type: payload.type || 'distress_emergency',
+        trigger: payload.trigger || 'distress_button',
+        message: payload.message || 'Patient triggered Emergency Distress Signal on Mnemosync HUD',
+        location: payload.location || 'Living Room (Front Chair, 14 Park Lane)',
+        vitals: payload.vitals || { heartRate: 104, stressLevel: 'High', agitation: 'Elevated' },
+        recentActivities: payload.recentActivities || [],
+        cameraFrame: payload.cameraFrame || null,
+        timestamp: payload.timestamp || new Date().toLocaleTimeString(),
+    };
+
+    getHub().emit('patient_distress_signal', fullPayload);
+
+    try {
+        fetch('http://localhost:5174/api/patient/distress-signal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fullPayload),
+        }).catch(() => {});
+        fetch('http://localhost:5000/api/patient/distress-signal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fullPayload),
+        }).catch(() => {});
+    } catch (e) {}
+}
+
+export function emitPatientCameraFrame(frameBase64: string) {
+    if (!frameBase64) return;
+    getHub().emit('patient_camera_frame', { frame: frameBase64, timestamp: Date.now() });
+    try {
+        fetch('http://localhost:5174/api/patient/camera-frame', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ frame: frameBase64 }),
+        }).catch(() => {});
+    } catch (e) {}
+}
+
 // ── Typed listener helpers ────────────────────────────────────────────────────
 
 export interface CognitiveAlert {

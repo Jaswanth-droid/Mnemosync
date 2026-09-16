@@ -5,7 +5,7 @@ import { addDate, appendDateExtraInfo, addConversation, generateId } from './mem
 import { SpeakerDetector } from './speakerDetector';
 import { getVoicePrintEngine } from './voicePrint';
 import { extractOccasions, parseDateFromText, type Occasion } from './occasionExtractor';
-import { emitPatientAssistRequest } from './socketClient';
+import { emitPatientAssistRequest, emitPatientDistressSignal } from './socketClient';
 
 interface ConversationEntry {
     speaker: string;
@@ -378,6 +378,29 @@ TRANSCRIPT:
             if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const u = new SpeechSynthesisUtterance("Mrs. Sunita, please pause and stay right where you are. I have informed your caregiver Ananya, she is guiding you now.");
+                u.rate = 0.92;
+                u.pitch = 1.05;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // Detect emergency distress voice trigger
+        const isDistressSpoken = /\b(?:distress|emergency|i\s+fell(?:\s+down)?|sos|cannot\s+breathe|severe\s+pain|i\s+need\s+urgent\s+help|call\s+an\s+ambulance|help\s+me\s+please)\b/i.test(transcript);
+        if (isDistressSpoken) {
+            console.log('[ConversationRecorder] 🚨🚨 Patient voice DISTRESS emergency detected:', transcript);
+            emitPatientDistressSignal({
+                patientName: patientName || 'Mrs. Sunita Sharma',
+                type: 'distress_emergency',
+                trigger: 'voice_query',
+                message: transcript.trim(),
+                location: 'Living Room (Front Area, 14 Park Lane)',
+                vitals: { heartRate: 112, stressLevel: 'Critical', agitation: 'High' },
+                timestamp: new Date().toLocaleTimeString()
+            });
+
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance("Emergency distress signal sent to caregiver Ananya. She is viewing your live AI camera now. Please stay calm.");
                 u.rate = 0.92;
                 u.pitch = 1.05;
                 window.speechSynthesis.speak(u);

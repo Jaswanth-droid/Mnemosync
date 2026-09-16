@@ -320,6 +320,83 @@ app.post('/api/patient/assist-request-internal', (req, res) => {
     res.json({ success: true });
 });
 
+let latestCameraFrame = null;
+
+// Distress Signal Endpoint
+app.post('/api/patient/distress-signal', (req, res) => {
+    const {
+        patientName = 'Mrs. Sunita Sharma',
+        type = 'distress_emergency',
+        trigger = 'distress_button',
+        message = 'Patient triggered Emergency Distress Signal on Mnemosync HUD',
+        location = 'Living Room (Front Chair, 14 Park Lane)',
+        vitals = { heartRate: 104, stressLevel: 'High', agitation: 'Elevated' },
+        recentActivities = [],
+        cameraFrame = null,
+        timestamp = new Date().toLocaleTimeString()
+    } = req.body;
+
+    console.log(`[Hub:5000 Alert] 🚨🚨 DISTRESS SIGNAL received from ${patientName}! Trigger: ${trigger}`);
+    if (cameraFrame) {
+        latestCameraFrame = cameraFrame;
+    }
+
+    const payload = {
+        patientName,
+        type,
+        trigger,
+        message,
+        location,
+        vitals,
+        recentActivities,
+        cameraFrame: cameraFrame || latestCameraFrame,
+        timestamp
+    };
+
+    io.emit('patient_distress_signal', payload);
+
+    // Cross forward to port 5174
+    try {
+        const postData = JSON.stringify(payload);
+        const request = http.request({
+            hostname: 'localhost',
+            port: 5174,
+            path: '/api/patient/distress-signal-internal',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        });
+        request.on('error', () => {});
+        request.write(postData);
+        request.end();
+    } catch (e) {}
+
+    res.json({ success: true, received: true, payload });
+});
+
+app.post('/api/patient/distress-signal-internal', (req, res) => {
+    if (req.body.cameraFrame) {
+        latestCameraFrame = req.body.cameraFrame;
+    }
+    io.emit('patient_distress_signal', req.body);
+    res.json({ success: true });
+});
+
+app.post('/api/patient/camera-frame', (req, res) => {
+    const { frame } = req.body;
+    if (frame) {
+        latestCameraFrame = frame;
+        io.emit('patient_camera_frame', { frame, timestamp: Date.now() });
+    }
+    res.json({ success: true });
+});
+
+app.get('/api/patient/latest-camera', (_req, res) => {
+    res.json({ frame: latestCameraFrame, timestamp: Date.now() });
+});
+
 // ── Interactive Web Dashboard UI ─────────────────────────────────────────────
 app.get('/', (_req, res) => {
     res.send(`
