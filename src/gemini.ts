@@ -1,11 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export const getGeminiModel = (apiKey: string, modelName: string = "gemini-2.5-flash") => {
+export const getGeminiModel = (apiKey: string, modelName: string = "gemini-2.5-flash-lite") => {
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // Provide a fallback map only for non-existent mock UI models
-    let realModel = 'gemini-1.5-flash'; // Forcing flash to avoid quota limits
-    if (modelName === 'gemini-3-flash-preview') realModel = 'gemini-1.5-flash'; 
+    // Map futuristic names to real models for functionality
+    let realModel = modelName;
+    if (modelName === 'gemini-3-flash-preview') realModel = 'gemini-1.5-flash';
     if (modelName === 'gemini-2.5-flash-lite') realModel = 'gemini-1.5-flash';
 
     return genAI.getGenerativeModel({ model: realModel });

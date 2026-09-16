@@ -1,137 +1,124 @@
-import { useEffect, useRef } from 'react';
+// @ts-nocheck
+import React, { useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Float, Sparkles } from '@react-three/drei';
+import * as THREE from 'three';
 
-interface Node {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    radius: number;
+const PASTELS = ['#f9c8dd', '#bcdcf7', '#c4ecd9', '#ffe0c2', '#ddd0f7', '#fdf3c0'];
+
+interface BlobProps {
+    position: [number, number, number];
     color: string;
-    pulse: number;
+    scale: number;
+    kind: number;
+    speed: number;
 }
 
-export default function NeuralBackground() {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const nodesRef = useRef<Node[]>([]);
-    const animationRef = useRef<number>(0);
+function PastelBlob({ position, color, scale, kind, speed }: BlobProps) {
+    const ref = useRef<THREE.Mesh>(null);
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+    useFrame((state) => {
+        if (!ref.current) return;
+        ref.current.rotation.x = state.clock.elapsedTime * 0.12 * speed;
+        ref.current.rotation.y = state.clock.elapsedTime * 0.16 * speed;
+    });
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+    const geometry = useMemo(() => {
+        switch (kind % 4) {
+            case 0:
+                return <icosahedronGeometry args={[1, 0]} />;
+            case 1:
+                return <torusGeometry args={[1, 0.38, 24, 48]} />;
+            case 2:
+                return <sphereGeometry args={[1, 48, 48]} />;
+            default:
+                return <torusKnotGeometry args={[0.8, 0.26, 120, 24]} />;
+        }
+    }, [kind]);
 
-        // Account for the 75% scaling - use actual viewport size
-        const resize = () => {
-            // Get actual viewport dimensions (not scaled)
-            const width = window.innerWidth / 0.75;
-            const height = window.innerHeight / 0.75;
-            canvas.width = width;
-            canvas.height = height;
+    return (
+        <Float speed={speed * 1.4} rotationIntensity={0.5} floatIntensity={1.6}>
+            <mesh ref={ref} position={position} scale={scale} castShadow={false}>
+                {geometry}
+                <meshStandardMaterial
+                    color={color}
+                    roughness={0.28}
+                    metalness={0.08}
+                    emissive={color}
+                    emissiveIntensity={0.12}
+                    transparent
+                    opacity={0.85}
+                />
+            </mesh>
+        </Float>
+    );
+}
 
-            // Reinitialize nodes on resize
-            initNodes(width, height);
-        };
+function Scene() {
+    const group = useRef<THREE.Group>(null);
 
-        const colors = ['#818cf8', '#a855f7', '#34d399', '#60a5fa', '#f472b6'];
+    useFrame((state) => {
+        if (!group.current) return;
+        const { x, y } = state.pointer;
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, x * 0.18, 0.04);
+        group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, -y * 0.12, 0.04);
+    });
 
-        const initNodes = (width: number, height: number) => {
-            nodesRef.current = Array.from({ length: 100 }, () => ({
-                x: Math.random() * width,
-                y: Math.random() * height,
-                vx: (Math.random() - 0.5) * 1,
-                vy: (Math.random() - 0.5) * 1,
-                radius: 2 + Math.random() * 3,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                pulse: Math.random() * Math.PI * 2
-            }));
-        };
-
-        resize();
-        window.addEventListener('resize', resize);
-
-        // Animation loop
-        const animate = () => {
-            const width = canvas.width;
-            const height = canvas.height;
-
-            // Clear with semi-transparent black for trails
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.fillRect(0, 0, width, height);
-
-            const nodes = nodesRef.current;
-
-            nodes.forEach((node, i) => {
-                // Update position
-                node.x += node.vx;
-                node.y += node.vy;
-                node.pulse += 0.015;
-
-                // Wrap around edges
-                if (node.x < 0) node.x = width;
-                if (node.x > width) node.x = 0;
-                if (node.y < 0) node.y = height;
-                if (node.y > height) node.y = 0;
-
-                // Draw connections
-                nodes.slice(i + 1).forEach((node2) => {
-                    const dx = node.x - node2.x;
-                    const dy = node.y - node2.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < 100) {
-                        ctx.beginPath();
-                        ctx.moveTo(node.x, node.y);
-                        ctx.lineTo(node2.x, node2.y);
-                        ctx.strokeStyle = node.color;
-                        ctx.globalAlpha = (1 - dist / 100) * 0.15;
-                        ctx.lineWidth = 0.5;
-                        ctx.stroke();
-                    }
-                });
-
-                // Pulsing effect
-                const pulse = 0.5 + Math.sin(node.pulse * 3) * 0.3;
-
-                // Draw node with glow
-                ctx.beginPath();
-                ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-                ctx.fillStyle = node.color;
-                ctx.globalAlpha = 0.7 * pulse;
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = node.color;
-                ctx.fill();
+    const blobs = useMemo<BlobProps[]>(() => {
+        const items: BlobProps[] = [];
+        for (let i = 0; i < 14; i++) {
+            const angle = (i / 14) * Math.PI * 2;
+            const radius = 6 + (i % 3) * 2.4;
+            items.push({
+                position: [
+                    Math.cos(angle) * radius,
+                    Math.sin(angle * 1.7) * 3.4,
+                    -4 - (i % 4) * 2.2,
+                ],
+                color: PASTELS[i % PASTELS.length],
+                scale: 0.7 + ((i * 37) % 10) / 9,
+                kind: i,
+                speed: 0.6 + ((i * 13) % 8) / 10,
             });
-
-            ctx.globalAlpha = 1;
-            ctx.shadowBlur = 0;
-            animationRef.current = requestAnimationFrame(animate);
-        };
-
-        animate();
-
-        return () => {
-            window.removeEventListener('resize', resize);
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
-            }
-        };
+        }
+        return items;
     }, []);
 
     return (
-        <canvas
-            ref={canvasRef}
+        <group ref={group}>
+            <ambientLight intensity={1.15} color="#fff4fa" />
+            <directionalLight position={[6, 8, 6]} intensity={1.1} color="#ffe3f1" />
+            <directionalLight position={[-6, -4, 4]} intensity={0.55} color="#d7e9ff" />
+            {blobs.map((b, i) => (
+                <PastelBlob key={i} {...b} />
+            ))}
+            <Sparkles count={140} scale={[26, 14, 12]} size={3} speed={0.35} opacity={0.55} color="#c9a8f0" />
+        </group>
+    );
+}
+
+export default function NeuralBackground() {
+    return (
+        <div
             style={{
                 position: 'fixed',
                 top: 0,
                 left: 0,
-                width: '133.33vw',  /* Compensate for 75% scale */
+                width: '133.33vw',
                 height: '133.33vh',
                 zIndex: 0,
                 pointerEvents: 'none',
-                opacity: 1.0
             }}
-        />
+        >
+            <Canvas
+                dpr={[1, 2.5]}
+                camera={{ position: [0, 0, 12], fov: 50 }}
+                gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+                style={{ pointerEvents: 'none' }}
+            >
+                <fog attach="fog" args={['#fbf7fe', 14, 34]} />
+                <Scene />
+            </Canvas>
+        </div>
     );
 }

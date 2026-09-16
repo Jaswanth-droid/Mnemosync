@@ -6,6 +6,9 @@ interface VoiceAssistantProps {
     lastSummary: string;
     identifiedPerson: { name: string; relation: string } | null;
     visitorInfo?: { name: string; relation: string } | null;
+    /** When set, speak a warm familiar-voice greeting for this person, then clear. */
+    greetingPerson?: { name: string; relation: string } | null;
+    onGreetingSpoken?: () => void;
     patientName?: string;
 }
 
@@ -13,6 +16,8 @@ export default function VoiceAssistant({
     lastSummary,
     identifiedPerson,
     visitorInfo,
+    greetingPerson,
+    onGreetingSpoken,
     patientName = 'User'
 }: VoiceAssistantProps) {
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -163,6 +168,33 @@ export default function VoiceAssistant({
         utteranceRef.current = utterance;
         synthRef.current.speak(utterance);
     }, [visitorInfo, patientName]);
+
+    // Speak a warm familiar-voice greeting when a known person is recognised.
+    const speakGreeting = useCallback((name: string, relation: string) => {
+        if (!synthRef.current) return;
+        synthRef.current.cancel();
+        const rel = relation && relation !== 'visitor' && relation !== 'you' ? `, your ${relation}` : '';
+        const text = `Hello ${patientName}. ${name}${rel} is here with you. You know them, and you are safe.`;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.85;
+        utterance.pitch = 1.15;
+        utterance.volume = 1.0;
+        const voices = synthRef.current.getVoices();
+        const female = voices.find(v => /zira|samantha|karen|female|google uk english female/i.test(v.name) && v.lang.startsWith('en'))
+            || voices.find(v => v.lang.startsWith('en')) || null;
+        if (female) utterance.voice = female;
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => { setIsSpeaking(false); onGreetingSpoken?.(); };
+        utterance.onerror = () => { setIsSpeaking(false); onGreetingSpoken?.(); };
+        utteranceRef.current = utterance;
+        synthRef.current.speak(utterance);
+    }, [patientName, onGreetingSpoken]);
+
+    useEffect(() => {
+        if (greetingPerson && isEnabled && voicesReady) {
+            speakGreeting(greetingPerson.name, greetingPerson.relation);
+        }
+    }, [greetingPerson, isEnabled, voicesReady, speakGreeting]);
 
     // Simulate audio intensity variations during speech
     useEffect(() => {
