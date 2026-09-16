@@ -128,11 +128,6 @@ app.get('/patient/:name', (req, res) => {
     res.send(renderPatientHistoryPage(analytics));
 });
 
-app.get('/api/patient/:name', (req, res) => {
-    const patientName = req.params.name;
-    res.json(getPatientAnalytics(patientName));
-});
-
 // ── Sample & Template Downloads ──
 app.get('/api/download/sample-pdf', (_req, res) => {
     const filePath = path.join(__dirname, '..', 'sample_reports', 'Vasundhara_Hospital_Alzheimer_Report_Sample.pdf');
@@ -261,6 +256,7 @@ app.post('/api/patient/assist-request-internal', (req, res) => {
 });
 
 let latestCameraFrame = null;
+let activeDistressState = null;
 
 // ── Patient Distress Signal Endpoint (Immediate Emergency Alert with Camera & Event History) ──
 app.post('/api/patient/distress-signal', (req, res) => {
@@ -277,7 +273,6 @@ app.post('/api/patient/distress-signal', (req, res) => {
     } = req.body;
 
     console.log(`[Caretaker 5174 Alert] 🚨🚨 URGENT DISTRESS SIGNAL from ${patientName}! Trigger: ${trigger}`);
-    let activeDistressState = null;
 
     if (cameraFrame) {
         latestCameraFrame = cameraFrame;
@@ -386,6 +381,11 @@ app.post('/api/patient/camera-frame', (req, res) => {
 
 app.get('/api/patient/latest-camera', (_req, res) => {
     res.json({ frame: latestCameraFrame, timestamp: Date.now() });
+});
+
+app.get('/api/patient/:name', (req, res) => {
+    const patientName = req.params.name;
+    res.json(getPatientAnalytics(patientName));
 });
 
 app.get('/health', (_req, res) => {

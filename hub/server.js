@@ -321,6 +321,7 @@ app.post('/api/patient/assist-request-internal', (req, res) => {
 });
 
 let latestCameraFrame = null;
+let activeDistressState = null;
 
 // Distress Signal Endpoint
 app.post('/api/patient/distress-signal', (req, res) => {
@@ -353,6 +354,7 @@ app.post('/api/patient/distress-signal', (req, res) => {
         timestamp
     };
 
+    activeDistressState = payload;
     io.emit('patient_distress_signal', payload);
 
     // Cross forward to port 5174
@@ -411,6 +413,7 @@ app.post('/api/patient/reply-caregiver', (req, res) => {
 });
 
 app.post('/api/patient/resolve-distress', (_req, res) => {
+    activeDistressState = null;
     if (io) io.emit('distress_resolved', { timestamp: new Date().toLocaleTimeString() });
     try {
         const postData = JSON.stringify({ timestamp: new Date().toLocaleTimeString() });
@@ -432,8 +435,13 @@ app.post('/api/patient/resolve-distress', (_req, res) => {
 });
 
 app.post('/api/patient/resolve-distress-internal', (_req, res) => {
+    activeDistressState = null;
     if (io) io.emit('distress_resolved', { timestamp: new Date().toLocaleTimeString() });
     res.json({ success: true });
+});
+
+app.get('/api/patient/distress-status', (_req, res) => {
+    res.json({ active: !!activeDistressState, distress: activeDistressState, latestCamera: latestCameraFrame });
 });
 
 app.post('/api/patient/camera-frame', (req, res) => {
