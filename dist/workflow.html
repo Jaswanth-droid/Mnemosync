@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mnemosync Workflow Viewer</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #1a1a1a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        #toolbar { position: absolute; top: 20px; right: 20px; z-index: 100; background: rgba(30,30,30,0.8); padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); backdrop-filter: blur(5px); border: 1px solid #333;}
+        button { background: #3f51b5; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin-left: 8px; font-weight: 600; transition: background 0.2s; }
+        button:hover { background: #5c6bc0; }
+        .download-btn { background: #4caf50; }
+        .download-btn:hover { background: #66bb6a; }
+        #diagram-container { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .mermaid { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <span style="margin-right: 15px; font-weight: bold; color: #aaa;">Scroll to Zoom, Drag to Pan</span>
+        <button onclick="zoomIn()">Zoom In</button>
+        <button onclick="zoomOut()">Zoom Out</button>
+        <button onclick="resetZoom()">Reset</button>
+        <button class="download-btn" onclick="downloadSVG()">⬇ Download Vector (SVG)</button>
+    </div>
+    
+    <div id="diagram-container">
+        <div class="mermaid" id="mermaid-graph">
+%%{init: {'theme': 'dark', 'themeVariables': { 'background': '#1a1a1a'}}}%%
+flowchart LR
+    classDef input fill:#e1f5fe,stroke:#03a9f4,stroke-width:2px,color:#000
+    classDef frontend fill:#fff3e0,stroke:#ff9800,stroke-width:2px,color:#000
+    classDef ai_engine fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px,color:#000
+    classDef local_fallback fill:#ffebee,stroke:#f44336,stroke-width:2px,color:#000
+    classDef storage fill:#e8f5e9,stroke:#4caf50,stroke-width:2px,color:#000
+    classDef output fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,color:#000
+
+    subgraph Row1 ["1. Sensory Input & Pre-processing (Frontend)"]
+        direction LR
+        Cam["📷 Webcam Stream"]:::input --> FrameCapture["Extract Video Frames"]:::frontend
+        Mic["🎤 Speech Recognition"]:::input --> AudioChunk["Transcribe Audio & Context"]:::frontend
+    end
+
+    subgraph Row2 ["2. Hybrid Intelligence Engine (Resilience Tiers)"]
+        direction LR
+        Orchestrator{"Multi-Modal<br/>Orchestrator"}:::ai_engine
+        
+        G3["🟢 Primary: Gemini 3 Flash<br/>- Deep Context<br/>- Task Extraction"]:::ai_engine
+        G25["🟡 Secondary: Gemini 2.5<br/>- Rate-Limit Fallback"]:::ai_engine
+        Local["🔴 Tertiary: Local Models<br/>- Face-API & Regex"]:::local_fallback
+
+        Orchestrator --"Prompt"--> G3
+        G3 --"Timeout / Limits"--> G25
+        G25 --"Offline / Fail"--> Local
+    end
+
+    subgraph Row3 ["3. Storage & Memory Dashboard UI"]
+        direction LR
+        Data_Parser["Data Normalization"]:::frontend --> DB[(Privacy-First<br/>IndexedDB)]:::storage
+        DB --> UI_State["React State<br/>Manager"]:::frontend
+        
+        UI_State --> Dashboard["Visual Timeline<br/>Dashboard"]:::output
+        UI_State --> Alerts["Proactive<br/>Action Alerts"]:::output
+        UI_State --> Social["Live Social<br/>Nudges"]:::output
+    end
+
+    FrameCapture --> Orchestrator
+    AudioChunk --> Orchestrator
+
+    G3 -. "Extracted Tasks" .-> Data_Parser
+    G25 -. "Extracted Tasks" .-> Data_Parser
+    Local -. "Extracted Tasks" .-> Data_Parser
+        </div>
+    </div>
+
+    <!-- Load Mermaid -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <!-- Load SVG Pan Zoom -->
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+    
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+        
+        let panZoomInstance = null;
+        
+        // Wait for mermaid to finish rendering before initializing pan/zoom
+        const checkRender = setInterval(() => {
+            const svgElement = document.querySelector('#mermaid-graph svg');
+            if(svgElement && svgElement.getAttribute('data-processed') === 'true') {
+                clearInterval(checkRender);
+                
+                // Allow SVG to fill the container for proper zooming
+                svgElement.style.maxWidth = 'none';
+                svgElement.style.maxHeight = 'none';
+                svgElement.style.width = '100%';
+                svgElement.style.height = '100%';
+                
+                panZoomInstance = svgPanZoom(svgElement, {
+                    zoomEnabled: true,
+                    controlIconsEnabled: false,
+                    fit: true,
+                    center: true,
+                    minZoom: 0.1,
+                    maxZoom: 20
+                });
+            }
+        }, 200);
+
+        function zoomIn() { if(panZoomInstance) panZoomInstance.zoomIn(); }
+        function zoomOut() { if(panZoomInstance) panZoomInstance.zoomOut(); }
+        function resetZoom() { if(panZoomInstance) { panZoomInstance.resetZoom(); panZoomInstance.center(); } }
+
+        function downloadSVG() {
+            const svg = document.querySelector('#mermaid-graph svg');
+            if(!svg) {
+                alert("Diagram is still rendering. Please wait a moment.");
+                return;
+            }
+            
+            // Clone the SVG so we don't mess up the live viewer when removing pan-zoom transforms
+            const clone = svg.cloneNode(true);
+            const viewport = clone.querySelector('.svg-pan-zoom_viewport');
+            if(viewport) {
+                viewport.removeAttribute('transform'); // Reset pan/zoom on the exported version
+            }
+            
+            const serializer = new XMLSerializer();
+            let source = serializer.serializeToString(clone);
+            
+            // Add xml namespace if it doesn't exist
+            if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+                source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+            }
+            if(!source.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)){
+                source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+            }
+
+            const blob = new Blob([source], {type: "image/svg+xml;charset=utf-8"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "mnemosync_workflow.svg";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>

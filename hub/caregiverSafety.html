@@ -324,19 +324,23 @@
             </div>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <div id="statusBadgeLocation" style="padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.4);">
-                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: pulse 1s infinite;"></span>
-                <span id="locStatusText">🚨 Outside Perimeter (14th Cross Rd, 72m NE)</span>
+            <div id="statusBadgeLocation" style="padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3);">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80;"></span>
+                <span id="locStatusText">🟢 Safe Zone (Living Room, 14 Park Lane)</span>
             </div>
-            <div id="vitalsBadge" style="background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 8px; font-size: 12px; border: 1px solid rgba(255,255,255,0.1); color: #fbbf24; font-weight: 700;">
-                💓 96 BPM (Pacing / Agitation)
+            <div id="vitalsBadge" style="background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 8px; font-size: 12px; border: 1px solid rgba(255,255,255,0.1); color: #34d399; font-weight: 700;">
+                💓 74 BPM (Resting / Normal)
             </div>
+            <button onclick="simulateUserDistressSignal()" style="background: linear-gradient(135deg, #0284c7, #6366f1); color: white; border: none; padding: 7px 16px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(2,132,199,0.35);">
+                📹 Access Live User AI Camera & Intercom
+            </button>
         </div>
     </div>
 
     <div class="grid">
         <div>
-            <div class="card alert-card" id="incidentCard">
+            <div class="card alert-card" id="incidentCard" style="display: none;">
+
                 <div class="card-header" style="margin-bottom: 12px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 20px;">🚨</span>
@@ -682,6 +686,17 @@
                                 📢 Speak
                             </button>
                         </div>
+
+                        <!-- Real-Time Patient AI Reply Container -->
+                        <div id="modalReplyBox" style="display: none; margin-top: 10px; background: rgba(34, 197, 94, 0.15); border: 1.5px solid rgba(34, 197, 94, 0.4); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #86efac;">
+                            <div style="font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                                <span>💬</span> Mnemosync Original Module Replied:
+                            </div>
+                            <div id="modalReplyContent" style="font-size: 12px; color: #f0fdf4;">
+                                Patient received & heard guidance aloud.
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -1214,6 +1229,51 @@
                 updateCameraFrame(data.frame);
             }
         });
+
+        function handlePatientReply(data) {
+            console.log('[Safety Portal] 💬 Patient AI replied:', data);
+            const replyBox = document.getElementById('modalReplyBox');
+            const replyContent = document.getElementById('modalReplyContent');
+            const text = data.replyText || data.reply || data.message || 'Assistance acknowledged by patient.';
+            const time = data.timestamp || new Date().toLocaleTimeString();
+
+            if (replyBox && replyContent) {
+                replyBox.style.display = 'block';
+                replyContent.innerHTML = `<strong>[${time}]</strong> ${text}`;
+            }
+
+            const logBox = document.getElementById('voiceLogContainer');
+            if (logBox) {
+                const item = document.createElement('div');
+                item.style.color = '#34d399';
+                item.innerHTML = `<span style="font-weight: bold;">[${time}]</span> 🤖 <strong>Mnemosync HUD Reply:</strong> "${text}"`;
+                logBox.prepend(item);
+            }
+        }
+
+        socket.on('patient_reply_to_caregiver', handlePatientReply);
+
+        socket.on('distress_resolved', () => {
+            closeDistressModal();
+        });
+
+        // Periodic Fallback Polling every 2s for active distress state
+        async function checkDistressPolling() {
+            try {
+                const res = await fetch('/api/patient/distress-status');
+                const data = await res.json();
+                if (data.active && data.distress) {
+                    const modal = document.getElementById('distressPopupModal');
+                    if (modal && modal.style.display !== 'flex') {
+                        openDistressModal(data.distress);
+                    }
+                    if (data.latestCamera) {
+                        updateCameraFrame(data.latestCamera);
+                    }
+                }
+            } catch(e) {}
+        }
+        setInterval(checkDistressPolling, 2000);
 
         // Initialize timeline on page load
         renderActivitiesList(defaultUserActivities, 'mainActivitiesList');

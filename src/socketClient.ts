@@ -170,6 +170,29 @@ export function emitPatientCameraFrame(frameBase64: string) {
     } catch (e) {}
 }
 
+export function emitPatientReplyToCaregiver(replyText: string, originalMessage?: string) {
+    const payload = {
+        reply: replyText,
+        originalMessage: originalMessage || '',
+        timestamp: new Date().toLocaleTimeString(),
+        patientName: 'Mrs. Sunita Sharma'
+    };
+    getHub().emit('patient_reply_to_caregiver', payload);
+    try {
+        fetch('http://localhost:5174/api/patient/reply-caregiver', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        }).catch(() => {});
+        fetch('http://localhost:5000/api/patient/reply-caregiver', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        }).catch(() => {});
+    } catch (e) {}
+}
+
+
 // ── Typed listener helpers ────────────────────────────────────────────────────
 
 export interface CognitiveAlert {

@@ -182,34 +182,107 @@ def create_presentation():
     set_slide_background(slide5)
     add_title(slide5, "System Workflow Architecture")
     
-    # Try loading from project-relative path first, then appdata
-    appdata_path = os.path.expandvars(r'%APPDATA%\..\Local\Temp') # fallback or locate
-    img_path = r"C:\Users\DELL\.gemini\antigravity\brain\6449ae18-97c6-4f36-838a-aa0f2d6fef19\scratch\mnemosync_workflow_landscape.png"
-    if os.path.exists(img_path):
-        slide5.shapes.add_picture(img_path, Inches(1.0), Inches(1.5), Inches(11.333), Inches(5.2))
-    else:
-        # Fallback text box if image doesn't exist locally
-        tb = slide5.shapes.add_textbox(Inches(1.0), Inches(2.0), Inches(11.333), Inches(3.0))
-        tb.text_frame.text = "[Workflow Diagram Image Not Found at default path. Paste workflow image here.]"
+    # Draw native vector diagram shapes directly on Slide 5
+    from pptx.enum.shapes import MSO_SHAPE
+    
+    # Card styles
+    CARD_BG = RGBColor(38, 42, 51)
+    CYAN_BORDER = RGBColor(3, 169, 244)
+    PURPLE_BORDER = RGBColor(156, 39, 176)
+    GREEN_BORDER = RGBColor(76, 175, 80)
+    ARROW_COLOR = RGBColor(120, 120, 120)
+    
+    def draw_card(slide, text, x_in, y_in, w_in, h_in, border_color, shape_type=MSO_SHAPE.ROUNDED_RECTANGLE):
+        shape = slide.shapes.add_shape(shape_type, Inches(x_in), Inches(y_in), Inches(w_in), Inches(h_in))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = CARD_BG
+        shape.line.color.rgb = border_color
+        shape.line.width = Pt(2)
+        tf = shape.text_frame
+        tf.word_wrap = True
+        p = tf.paragraphs[0]
+        p.text = text
+        p.font.size = Pt(13)
+        p.font.name = "Segoe UI"
+        p.font.bold = True
+        p.font.color.rgb = TEXT_COLOR
+        p.alignment = PP_ALIGN.CENTER
+        return shape
 
-    # --- SLIDE 6: Conceptual Design / Mockup ---
+    def draw_arrow(slide, x_in, y_in, w_in, h_in, direction="right"):
+        shape_type = MSO_SHAPE.RIGHT_ARROW if direction == "right" else MSO_SHAPE.DOWN_ARROW
+        shape = slide.shapes.add_shape(shape_type, Inches(x_in), Inches(y_in), Inches(w_in), Inches(h_in))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = ARROW_COLOR
+        shape.line.fill.background()
+        return shape
+
+    # Section Headers / Titles
+    def add_section_header(slide, text, x_in, y_in, w_in):
+        tb = slide.shapes.add_textbox(Inches(x_in), Inches(y_in), Inches(w_in), Inches(0.5))
+        p = tb.text_frame.paragraphs[0]
+        p.text = text
+        p.font.size = Pt(16)
+        p.font.bold = True
+        p.font.color.rgb = ACCENT_COLOR
+        p.font.name = "Segoe UI"
+        p.alignment = PP_ALIGN.CENTER
+
+    # Column 1: Sensory Input (React Frontend)
+    add_section_header(slide5, "1. Sensory Input", 0.75, 1.4, 2.8)
+    draw_card(slide5, "📷 Webcam Feed\n(Real-time face frames)", 0.75, 2.0, 2.8, 1.3, CYAN_BORDER)
+    draw_card(slide5, "🎤 Speech Input\n(Web Speech API STT)", 0.75, 4.3, 2.8, 1.3, CYAN_BORDER)
+    
+    # Input to AI Orchestrator connector
+    draw_arrow(slide5, 3.75, 3.6, 0.7, 0.4, "right")
+
+    # Column 2: Hybrid AI Routing & Fallback
+    add_section_header(slide5, "2. Hybrid AI Fail-Safe", 4.65, 1.4, 3.7)
+    draw_card(slide5, "Primary: Gemini 3 Flash\n- High Context Face ID\n- Conversational Synthesis", 4.65, 2.0, 3.7, 1.0, PURPLE_BORDER)
+    draw_arrow(slide5, 6.3, 3.1, 0.4, 0.3, "down")
+    draw_card(slide5, "Backup: Gemini 2.5 Flash\n- Rate-limit Protection\n- Fallback Event Parsing", 4.65, 3.5, 3.7, 1.0, PURPLE_BORDER)
+    draw_arrow(slide5, 6.3, 4.6, 0.4, 0.3, "down")
+    draw_card(slide5, "Local Models & Heuristics\n- face-api.js Recognition\n- Regex Task Extraction", 4.65, 5.0, 3.7, 1.0, PURPLE_BORDER)
+
+    # AI to Storage connector
+    draw_arrow(slide5, 8.55, 3.6, 0.7, 0.4, "right")
+
+    # Column 3: Storage & Presentation
+    add_section_header(slide5, "3. Privacy DB & Dashboard", 9.45, 1.4, 3.1)
+    draw_card(slide5, "IndexedDB (Local Storage)\n- Zero Cloud Face DB\n- Reminders & Task Logs", 9.45, 2.0, 3.1, 1.3, GREEN_BORDER, MSO_SHAPE.CAN)
+    draw_arrow(slide5, 10.8, 3.5, 0.4, 0.6, "down")
+    draw_card(slide5, "React Dashboard UI\n- Visual Memory Logs\n- Proactive Audio Alerts\n- Live Social Nudges", 9.45, 4.3, 3.1, 1.8, GREEN_BORDER)
+
+    # --- SLIDE 6: System Workflow Infographic ---
     slide6 = prs.slides.add_slide(slide_layout)
     set_slide_background(slide6)
-    add_title(slide6, "Concept Design & Visual Interface")
+    add_title(slide6, "System Workflow Infographic")
+    
+    infographic_path = os.path.join("public", "mnemosync_workflow_infographic.jpg")
+    if os.path.exists(infographic_path):
+        slide6.shapes.add_picture(infographic_path, Inches(1.0), Inches(1.5), Inches(11.333), Inches(5.2))
+    else:
+        tb = slide6.shapes.add_textbox(Inches(1.0), Inches(2.0), Inches(11.333), Inches(3.0))
+        tb.text_frame.text = "[High-Fidelity Workflow Infographic Image Not Found. Paste image here.]"
+
+    # --- SLIDE 7: Conceptual Design / Mockup ---
+    slide7 = prs.slides.add_slide(slide_layout)
+    set_slide_background(slide7)
+    add_title(slide7, "Concept Design & Visual Interface")
     
     mockup_path = r"C:\Users\DELL\.gemini\antigravity\brain\6449ae18-97c6-4f36-838a-aa0f2d6fef19\mnemosync_concept_art_1781719529453.png"
     if os.path.exists(mockup_path):
-        slide6.shapes.add_picture(mockup_path, Inches(1.0), Inches(1.5), Inches(11.333), Inches(5.2))
+        slide7.shapes.add_picture(mockup_path, Inches(1.0), Inches(1.5), Inches(11.333), Inches(5.2))
     else:
-        tb = slide6.shapes.add_textbox(Inches(1.0), Inches(2.0), Inches(11.333), Inches(3.0))
+        tb = slide7.shapes.add_textbox(Inches(1.0), Inches(2.0), Inches(11.333), Inches(3.0))
         tb.text_frame.text = "[Concept Art Mockup Image Not Found at default path. Paste mockup image here.]"
 
-    # --- SLIDE 7: Expected Impact ---
-    slide7 = prs.slides.add_slide(slide_layout)
-    set_slide_background(slide7)
-    add_title(slide7, "Expected Impact")
+    # --- SLIDE 8: Expected Impact ---
+    slide8 = prs.slides.add_slide(slide_layout)
+    set_slide_background(slide8)
+    add_title(slide8, "Expected Impact")
 
-    body_box = slide7.shapes.add_textbox(Inches(0.75), Inches(1.8), Inches(11.833), Inches(5.0))
+    body_box = slide8.shapes.add_textbox(Inches(0.75), Inches(1.8), Inches(11.833), Inches(5.0))
     tf = body_box.text_frame
     tf.word_wrap = True
 
@@ -236,12 +309,12 @@ def create_presentation():
         run_desc.font.color.rgb = SUB_TEXT_COLOR
         run_desc.font.name = "Segoe UI"
 
-    # --- SLIDE 8: Project Roadmap ---
-    slide8 = prs.slides.add_slide(slide_layout)
-    set_slide_background(slide8)
-    add_title(slide8, "Project Roadmap")
+    # --- SLIDE 9: Project Roadmap ---
+    slide9 = prs.slides.add_slide(slide_layout)
+    set_slide_background(slide9)
+    add_title(slide9, "Project Roadmap")
 
-    body_box = slide8.shapes.add_textbox(Inches(0.75), Inches(1.8), Inches(11.833), Inches(5.0))
+    body_box = slide9.shapes.add_textbox(Inches(0.75), Inches(1.8), Inches(11.833), Inches(5.0))
     tf = body_box.text_frame
     tf.word_wrap = True
 
@@ -268,12 +341,12 @@ def create_presentation():
         run_desc.font.color.rgb = SUB_TEXT_COLOR
         run_desc.font.name = "Segoe UI"
 
-    # --- SLIDE 9: Team Details ---
-    slide9 = prs.slides.add_slide(slide_layout)
-    set_slide_background(slide9)
-    add_title(slide9, "Team Details")
+    # --- SLIDE 10: Team Details ---
+    slide10 = prs.slides.add_slide(slide_layout)
+    set_slide_background(slide10)
+    add_title(slide10, "Team Details")
 
-    body_box = slide9.shapes.add_textbox(Inches(0.75), Inches(2.2), Inches(11.833), Inches(4.5))
+    body_box = slide10.shapes.add_textbox(Inches(0.75), Inches(2.2), Inches(11.833), Inches(4.5))
     tf = body_box.text_frame
     tf.word_wrap = True
 

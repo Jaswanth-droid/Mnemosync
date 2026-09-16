@@ -277,6 +277,8 @@ app.post('/api/patient/distress-signal', (req, res) => {
     } = req.body;
 
     console.log(`[Caretaker 5174 Alert] 🚨🚨 URGENT DISTRESS SIGNAL from ${patientName}! Trigger: ${trigger}`);
+    let activeDistressState = null;
+
     if (cameraFrame) {
         latestCameraFrame = cameraFrame;
     }
@@ -292,6 +294,8 @@ app.post('/api/patient/distress-signal', (req, res) => {
         cameraFrame: cameraFrame || latestCameraFrame,
         timestamp
     };
+
+    activeDistressState = payload;
 
     if (io) {
         io.emit('patient_distress_signal', payload);
@@ -322,9 +326,27 @@ app.post('/api/patient/distress-signal-internal', (req, res) => {
     if (req.body.cameraFrame) {
         latestCameraFrame = req.body.cameraFrame;
     }
+    activeDistressState = req.body;
     if (io) {
         io.emit('patient_distress_signal', req.body);
     }
+    res.json({ success: true });
+});
+
+app.get('/api/patient/distress-status', (_req, res) => {
+    res.json({ active: !!activeDistressState, distress: activeDistressState, latestCamera: latestCameraFrame });
+});
+
+app.post('/api/patient/resolve-distress', (_req, res) => {
+    activeDistressState = null;
+    if (io) io.emit('distress_resolved', { timestamp: new Date().toLocaleTimeString() });
+    res.json({ success: true });
+});
+
+app.post('/api/patient/reply-caregiver', (req, res) => {
+    const payload = req.body;
+    console.log(`[Caretaker 5174 Reply] 💬 Patient reply received: "${payload.reply || payload.message}"`);
+    if (io) io.emit('patient_reply_to_caregiver', payload);
     res.json({ success: true });
 });
 
@@ -362,6 +384,7 @@ io.on('connection', (socket) => {
     socket.on('patient_distress_signal', (data) => {
         console.log('[Caretaker Socket] Relaying patient_distress_signal:', data);
         if (data && data.cameraFrame) latestCameraFrame = data.cameraFrame;
+        activeDistressState = data;
         io.emit('patient_distress_signal', data);
     });
     socket.on('patient_camera_frame', (data) => {
@@ -371,7 +394,12 @@ io.on('connection', (socket) => {
     socket.on('caregiver_voice_assist', (data) => {
         io.emit('caregiver_voice_assist', data);
     });
+    socket.on('patient_reply_to_caregiver', (data) => {
+        console.log('[Caretaker Socket] Relaying patient_reply_to_caregiver:', data);
+        io.emit('patient_reply_to_caregiver', data);
+    });
 });
+
 
 server.listen(PORT, () => {
     console.log(`\n🛡️ Mnemosync Caretaker Portal running on http://localhost:${PORT}`);

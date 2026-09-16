@@ -384,6 +384,32 @@ app.post('/api/patient/distress-signal-internal', (req, res) => {
     res.json({ success: true });
 });
 
+app.post('/api/patient/reply-caregiver', (req, res) => {
+    const payload = req.body;
+    console.log(`[Hub:5000 Reply] 💬 Patient reply received: "${payload.reply || payload.message}"`);
+    io.emit('patient_reply_to_caregiver', payload);
+    
+    // Cross forward to port 5174
+    try {
+        const postData = JSON.stringify(payload);
+        const request = http.request({
+            hostname: 'localhost',
+            port: 5174,
+            path: '/api/patient/reply-caregiver',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        });
+        request.on('error', () => {});
+        request.write(postData);
+        request.end();
+    } catch (e) {}
+
+    res.json({ success: true });
+});
+
 app.post('/api/patient/camera-frame', (req, res) => {
     const { frame } = req.body;
     if (frame) {
@@ -396,6 +422,7 @@ app.post('/api/patient/camera-frame', (req, res) => {
 app.get('/api/patient/latest-camera', (_req, res) => {
     res.json({ frame: latestCameraFrame, timestamp: Date.now() });
 });
+
 
 // ── Interactive Web Dashboard UI ─────────────────────────────────────────────
 app.get('/', (_req, res) => {
