@@ -123,11 +123,6 @@ app.get('/patient/:name', (req, res) => {
     res.send(renderPatientHistoryPage(analytics));
 });
 
-app.get('/api/patient/:name', (req, res) => {
-    const patientName = req.params.name;
-    res.json(getPatientAnalytics(patientName));
-});
-
 // Download sample and template PDFs generated from Vasundhara Hospital template
 app.get('/api/download/sample-pdf', (_req, res) => {
     const filePath = path.join(__dirname, '..', 'sample_reports', 'Vasundhara_Hospital_Alzheimer_Report_Sample.pdf');
@@ -382,6 +377,7 @@ app.post('/api/patient/distress-signal-internal', (req, res) => {
     if (req.body.cameraFrame) {
         latestCameraFrame = req.body.cameraFrame;
     }
+    activeDistressState = req.body;
     io.emit('patient_distress_signal', req.body);
     res.json({ success: true });
 });
@@ -455,6 +451,12 @@ app.post('/api/patient/camera-frame', (req, res) => {
 
 app.get('/api/patient/latest-camera', (_req, res) => {
     res.json({ frame: latestCameraFrame, timestamp: Date.now() });
+});
+
+// ── Wildcard Patient API (MUST be LAST after all specific /api/patient/* routes) ──
+app.get('/api/patient/:name', (req, res) => {
+    const patientName = req.params.name;
+    res.json(getPatientAnalytics(patientName));
 });
 
 
