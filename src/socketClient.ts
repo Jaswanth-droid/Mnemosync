@@ -161,11 +161,19 @@ export function emitPatientDistressSignal(payload: DistressSignalPayload) {
 export function emitPatientCameraFrame(frameBase64: string) {
     if (!frameBase64) return;
     getHub().emit('patient_camera_frame', { frame: frameBase64, timestamp: Date.now() });
+    const body = JSON.stringify({ frame: frameBase64 });
     try {
         fetch('http://localhost:5174/api/patient/camera-frame', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ frame: frameBase64 }),
+            body,
+        }).catch(() => {});
+    } catch (e) {}
+    try {
+        fetch('http://localhost:5000/api/patient/camera-frame', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
         }).catch(() => {});
     } catch (e) {}
 }

@@ -1016,6 +1016,22 @@
 
         let activeDistressPayload = null;
 
+        // ── Update the live camera feed image in the modal ──────────────────────
+        function updateCameraFrame(frameBase64) {
+            if (!frameBase64) return;
+            const img = document.getElementById('modalCameraFeed');
+            const fallback = document.getElementById('cameraFallbackView');
+            if (img) {
+                img.src = frameBase64;
+                img.style.display = 'block';
+                img.onerror = () => { img.style.display = 'none'; if (fallback) fallback.style.display = 'flex'; };
+            }
+            if (fallback) fallback.style.display = 'none';
+            // Update timestamp
+            const ts = document.getElementById('cameraFrameTime');
+            if (ts) ts.textContent = 'Last frame: ' + new Date().toLocaleTimeString();
+        }
+
         function openDistressModal(data) {
             activeDistressPayload = data;
             const modal = document.getElementById('distressPopupModal');
@@ -1062,6 +1078,22 @@
                     }).catch(() => {});
             }
 
+            // Start live camera polling loop — refreshes feed every 1.5s while modal is open
+            if (window._cameraRefreshInterval) clearInterval(window._cameraRefreshInterval);
+            window._cameraRefreshInterval = setInterval(async () => {
+                const modal = document.getElementById('distressPopupModal');
+                if (!modal || modal.style.display !== 'flex') {
+                    clearInterval(window._cameraRefreshInterval);
+                    window._cameraRefreshInterval = null;
+                    return;
+                }
+                try {
+                    const r = await fetch('/api/patient/latest-camera');
+                    const d = await r.json();
+                    if (d && d.frame) updateCameraFrame(d.frame);
+                } catch(e) {}
+            }, 1500);
+
             renderActivitiesList(data.recentActivities || defaultUserActivities, 'modalActivitiesList');
 
             const logBox = document.getElementById('voiceLogContainer');
@@ -1078,6 +1110,10 @@
         function closeDistressModal() {
             const modal = document.getElementById('distressPopupModal');
             if (modal) modal.style.display = 'none';
+            if (window._cameraRefreshInterval) {
+                clearInterval(window._cameraRefreshInterval);
+                window._cameraRefreshInterval = null;
+            }
         }
 
         function handleDistressResolvedUI() {
