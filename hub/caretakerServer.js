@@ -157,12 +157,52 @@ app.get('/api/download/worsening-pdf', (_req, res) => {
     else res.status(404).json({ error: 'Worsening PDF not found' });
 });
 
+app.post('/api/caregiver/voice-assist', (req, res) => {
+    const { message, sender = 'Caregiver Ananya', patientName = 'Mrs. Sunita Sharma', type = 'wandering_redirection' } = req.body;
+    console.log(`[Caretaker Voice Assist] Sending to ${patientName}: "${message}"`);
+    if (io) {
+        io.emit('caregiver_voice_assist', {
+            message,
+            sender,
+            patientName,
+            type,
+            timestamp: new Date().toLocaleTimeString()
+        });
+    }
+    
+    // Also notify main hub on port 5000 if running
+    try {
+        const postData = JSON.stringify({ message, sender, patientName, type });
+        const request = http.request({
+            hostname: 'localhost',
+            port: 5000,
+            path: '/api/caregiver/voice-assist',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        });
+        request.on('error', () => {});
+        request.write(postData);
+        request.end();
+    } catch (e) {}
+
+    res.json({ success: true, delivered: true, message, timestamp: new Date().toLocaleTimeString() });
+});
+
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'Mnemosync Caretaker Portal', port: process.env.CARETAKER_PORT || 5174 });
 });
 
 const PORT = process.env.CARETAKER_PORT || 5174;
 const server = http.createServer(app);
+const { Server } = require('socket.io');
+const io = new Server(server, { cors: { origin: '*' } });
+
+io.on('connection', (socket) => {
+    console.log('[Caretaker Socket] Client connected:', socket.id);
+});
 
 server.listen(PORT, () => {
     console.log(`\n🛡️ Mnemosync Caretaker Portal running on http://localhost:${PORT}`);

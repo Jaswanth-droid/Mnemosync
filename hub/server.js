@@ -1,10 +1,273 @@
+/**
+ * Mnemosync OCR & Longitudinal Alzheimer's Clinical Report Analyzer Hub
+ * Port: 5000
+ *
+ * Capabilities:
+ *   - Real PDF & Word Doc (.docx/.doc) & TXT document ingestion
+ *   - OCR Text Extraction (pdf-parse & mammoth)
+ *   - Longitudinal Alzheimer's Disease Progression & Comparative Velocity Engine
+ *   - Interactive Web Dashboard on http://localhost:5000
+ *   - Socket.IO & REST APIs for seamless clinical telemetry
+ */
 
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
+const https = require('https');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Multer memory storage for direct file buffer extraction
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: '*', methods: ['GET', 'POST'] }
+});
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBOSp25QjJRHC4MRGJOHzNx6ItTEIQ7zZY';
+
+// Track connected clients
+const clients = { react: new Set(), dashboard: new Set() };
+const recentAnalyses = [];
+
+io.on('connection', (socket) => {
+    const clientType = socket.handshake.query.clientType || socket.handshake.auth?.clientType || 'unknown';
+    if (clients[clientType]) clients[clientType].add(socket.id);
+    console.log(`[HUB:5000] ✅ Client connected: ${clientType} (${socket.id})`);
+
+    socket.on('disconnect', () => {
+        if (clients[clientType]) clients[clientType].delete(socket.id);
+    });
+});
+
+const { parseClinicalReport } = require('./clinicalAnalyzer');
+const { recordScan, getPatientAnalytics } = require('./patientHistoryStore');
+const { renderPatientHistoryPage } = require('./patientHistoryPage');
+
+// ── Document Text Extractor (PDF, DOCX, TXT) ──────────────────────────────────
+async function extractTextFromBuffer(buffer, mimetype, originalname) {
+    const ext = (originalname.split('.').pop() || '').toLowerCase();
+    
+    if (mimetype === 'application/pdf' || ext === 'pdf') {
+        try {
+            if (typeof pdfParse === 'function') {
+                const data = await pdfParse(buffer);
+                return data.text || '';
+            } else if (pdfParse.PDFParse) {
+                const parser = new pdfParse.PDFParse(new Uint8Array(buffer));
+                const res = await parser.getText();
+                return res.text || res || '';
+            } else {
+                const PDFParser = require('pdf-parse').PDFParse || require('pdf-parse');
+                const parser = new PDFParser(new Uint8Array(buffer));
+                const res = await parser.getText();
+                return res.text || res || '';
+            }
+        } catch (pdfErr) {
+            console.error('[PDF Parser Error]', pdfErr);
+            return buffer.toString('utf-8');
+        }
+    } else if (
+        mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        mimetype === 'application/msword' ||
+        ext === 'docx' || ext === 'doc'
+    ) {
+        const result = await mammoth.extractRawText({ buffer });
+        return result.value;
+    } else {
+        // Plain text fallback
+        return buffer.toString('utf-8');
+    }
+}
+
+// ── Clinical Progression Analysis (Dynamic Real Extraction) ──────────────────
+async function analyzeReportWithGemini(reportText) {
+    const dynamicAnalysis = parseClinicalReport(reportText);
+    if (!dynamicAnalysis) {
+        return { error: "Failed to parse report content." };
+    }
+    return dynamicAnalysis;
+}
+
+// ── REST API Endpoints ───────────────────────────────────────────────────────
+
+app.get('/health', (_req, res) => {
+    res.json({
+        status: 'ok',
+        service: 'Mnemosync OCR & Longitudinal Progression Hub',
+        port: 5000,
+        activeClients: io.engine.clientsCount
+    });
+});
+
+// Dedicated Patient History & 270° Speedometer Page
+app.get('/patient-history', (req, res) => {
+    const patientName = req.query.name || 'Rajesh K. Verma';
+    const analytics = getPatientAnalytics(patientName);
+    res.send(renderPatientHistoryPage(analytics));
+});
+
+app.get('/patient/:name', (req, res) => {
+    const patientName = req.params.name || 'Rajesh K. Verma';
+    const analytics = getPatientAnalytics(patientName);
+    res.send(renderPatientHistoryPage(analytics));
+});
+
+app.get('/api/patient/:name', (req, res) => {
+    const patientName = req.params.name;
+    res.json(getPatientAnalytics(patientName));
+});
+
+// Download sample and template PDFs generated from Vasundhara Hospital template
+app.get('/api/download/sample-pdf', (_req, res) => {
+    const filePath = path.join(__dirname, '..', 'sample_reports', 'Vasundhara_Hospital_Alzheimer_Report_Sample.pdf');
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, 'Vasundhara_Hospital_Alzheimer_Report_Sample.pdf');
+    } else {
+        res.status(404).json({ error: 'Sample PDF not found' });
+    }
+});
+
+app.get('/api/download/template-pdf', (_req, res) => {
+    const filePath = path.join(__dirname, '..', 'sample_reports', 'Vasundhara_Hospital_Alzheimer_Report_Template.pdf');
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, 'Vasundhara_Hospital_Alzheimer_Report_Template.pdf');
+    } else {
+        res.status(404).json({ error: 'Template PDF not found' });
+    }
+});
+
+app.get('/api/download/worsening-pdf', (_req, res) => {
+    const filePath = path.join(__dirname, '..', 'sample_reports', 'Vasundhara_Hospital_Alzheimer_Report_Worsening_Case.pdf');
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, 'Vasundhara_Hospital_Alzheimer_Report_Worsening_Case.pdf');
+    } else {
+        res.status(404).json({ error: 'Worsening PDF not found' });
+    }
+});
+
+app.get('/api/download/sunita-pptx', (_req, res) => {
+    const filePath = path.join(__dirname, '..', 'sample_reports', 'Vasundhara_Hospital_Alzheimer_Case_Presentation_Sunita_Sharma.pptx');
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, 'Vasundhara_Hospital_Alzheimer_Case_Presentation_Sunita_Sharma.pptx');
+    } else {
+        res.status(404).json({ error: 'Presentation PPTX not found' });
+    }
+});
+
+app.get('/api/download/sunita-pdf', (_req, res) => {
+    const filePath = path.join(__dirname, '..', 'sample_reports', 'Vasundhara_Hospital_Alzheimer_Report_Sunita_Sharma.pdf');
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, 'Vasundhara_Hospital_Alzheimer_Report_Sunita_Sharma.pdf');
+    } else {
+        res.status(404).json({ error: 'Sunita Sharma PDF not found' });
+    }
+});
+
+app.get('/api/download/sunita-followup-pdf', (_req, res) => {
+    const filePath = path.join(__dirname, '..', 'sample_reports', 'Vasundhara_Hospital_Alzheimer_Report_Sunita_Sharma_FollowUp.pdf');
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, 'Vasundhara_Hospital_Alzheimer_Report_Sunita_Sharma_FollowUp.pdf');
+    } else {
+        res.status(404).json({ error: 'Sunita Sharma Follow-Up PDF not found' });
+    }
+});
+
+// Direct file upload endpoint (PDF, Word, TXT)
+app.post('/api/ocr/upload', upload.single('reportFile'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        console.log(`[OCR Engine] Ingesting file: ${req.file.originalname} (${req.file.mimetype}, ${req.file.size} bytes)`);
+        const extractedText = await extractTextFromBuffer(req.file.buffer, req.file.mimetype, req.file.originalname);
+        
+        console.log(`[OCR Engine] Extracted ${extractedText.length} characters of clinical text`);
+        const analysis = await analyzeReportWithGemini(extractedText);
+        
+        // Record into longitudinal database
+        if (analysis.patient_summary?.name) {
+            recordScan(analysis.patient_summary.name, analysis);
+        }
+
+        recentAnalyses.unshift({
+            filename: req.file.originalname,
+            time: new Date().toLocaleTimeString(),
+            analysis
+        });
+        if (recentAnalyses.length > 10) recentAnalyses.pop();
+
+        io.emit('clinical_analysis_completed', analysis);
+        res.json({ success: true, extractedText, extractedLength: extractedText.length, analysis });
+    } catch (err) {
+        console.error('[OCR Engine] Upload processing error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Direct text analysis endpoint
+app.post('/api/ocr/analyze', async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text || !text.trim()) {
+            return res.status(400).json({ error: 'Missing clinical report text' });
+        }
+        console.log(`[OCR Engine] Analyzing clinical report text (${text.length} chars)`);
+        const analysis = await analyzeReportWithGemini(text);
+        
+        // Record into longitudinal database
+        if (analysis.patient_summary?.name) {
+            recordScan(analysis.patient_summary.name, analysis);
+        }
+
+        recentAnalyses.unshift({
+            filename: 'Direct Text Input',
+            time: new Date().toLocaleTimeString(),
+            analysis
+        });
+
+        io.emit('clinical_analysis_completed', analysis);
+        res.json({ success: true, analysis });
+    } catch (err) {
+        console.error('[OCR Engine] Analysis error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Caregiver Remote Voice Assistance Endpoint
+app.post('/api/caregiver/voice-assist', (req, res) => {
+    const { message, sender = 'Caregiver Ananya', patientName = 'Mrs. Sunita Sharma', type = 'wandering_redirection' } = req.body;
+    console.log(`[Hub:5000 Voice Assist] Broadcasting to ${patientName}: "${message}"`);
+    io.emit('caregiver_voice_assist', {
+        message,
+        sender,
+        patientName,
+        type,
+        timestamp: new Date().toLocaleTimeString()
+    });
+    res.json({ success: true, delivered: true, message, timestamp: new Date().toLocaleTimeString() });
+});
+
+// ── Interactive Web Dashboard UI ─────────────────────────────────────────────
+app.get('/', (_req, res) => {
+    res.send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mnemosync OCR & Disease Progression Engine — Caretaker Portal</title>
+    <title>Mnemosync OCR — Longitudinal Alzheimer's Progression Hub</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -250,15 +513,7 @@
             <h1 class="title">📄 Mnemosync OCR & Disease Progression Engine</h1>
             <p class="subtitle">Multi-Modal Alzheimer's Diagnostic Report Ingestion & Longitudinal Velocity Comparison</p>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <div style="display: flex; gap: 6px; background: rgba(255,255,255,0.06); padding: 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
-                <button id="tabBtnOCR" onclick="switchTab('ocr')" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; color: white; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer;">
-                    📄 Clinical OCR & Progression
-                </button>
-                <button id="tabBtnCare" onclick="switchTab('care')" style="background: transparent; border: none; color: #94a3b8; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer;">
-                    🛡️ Caregiver Live Monitor & Safety
-                </button>
-            </div>
+        <div style="display: flex; gap: 10px;">
             <span class="badge" style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3);">
                 <span class="badge-pulse"></span>
                 OCR & Analytics Core Active
@@ -266,7 +521,7 @@
         </div>
     </div>
 
-    <div id="tabOCR"><div class="grid">
+    <div class="grid">
         <!-- Ingestion Column -->
         <div class="card">
             <div class="card-header">
@@ -313,17 +568,11 @@
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                 <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">Or load clinical demo presets:</span>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-                <button class="btn-preset active" style="border-color: #818cf8; color: #c084fc; font-weight: 700;" onclick="loadSample(7)">⭐ Vasundhara Hospital Format</button>
-                <button class="btn-preset" onclick="loadSample(1)">3-Visit Longitudinal</button>
-                <button class="btn-preset" onclick="loadSample(2)">Rapid Early Onset</button>
-                <button class="btn-preset" onclick="loadSample(3)">Mild MCI</button>
-            </div>
-            <div class="btn-group" style="margin-bottom: 12px;">
-                <button class="btn-preset" style="border-color: #10b981; color: #6ee7b7; font-size: 11px; padding: 4px 8px;" onclick="loadSample(6)">🌸 Sunita (Visit 1: 21/30)</button>
-                <button class="btn-preset" style="border-color: #f43f5e; color: #fda4af; font-size: 11px; padding: 4px 8px;" onclick="loadSample(7)">🚨 Sunita (Follow-Up: 15/30)</button>
-                <button class="btn-preset" style="border-color: #a855f7; color: #d8b4fe; font-size: 11px; padding: 4px 8px;" onclick="loadSample(4)">⭐ Rajesh (Visit 1: 19/30)</button>
-                <button class="btn-preset" style="border-color: #ef4444; color: #fca5a5; font-size: 11px; padding: 4px 8px;" onclick="loadSample(5)">🚨 Rajesh (Follow-Up: 13/30)</button>
+            <div class="btn-group">
+                <button class="btn-preset" style="border-color: #10b981; color: #6ee7b7;" onclick="loadSample(6)">🌸 Sunita (Visit 1: 21/30)</button>
+                <button class="btn-preset" style="border-color: #f43f5e; color: #fda4af;" onclick="loadSample(7)">🚨 Sunita (Follow-Up: 15/30)</button>
+                <button class="btn-preset" style="border-color: #a855f7; color: #d8b4fe;" onclick="loadSample(4)">⭐ Rajesh (Visit 1: 19/30)</button>
+                <button class="btn-preset" style="border-color: #ef4444; color: #fca5a5;" onclick="loadSample(5)">🚨 Rajesh (Follow-Up: 13/30)</button>
             </div>
 
             <label style="font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 6px; display: block;">Report Extracted Text / Edit:</label>
@@ -423,224 +672,6 @@
     </div>
 
     <script>
-        const presetMessages = [
-            "Mrs. Sunita, you are near the front gate. Please pause and turn around. The green front door is right behind you. Ananya is coming out to meet you.",
-            "Mom, don't worry, you forgot your keys and walking stick on the hallway table. Stay right where you are, I am coming outside to help you right now.",
-            "Mrs. Sunita, everything is alright. Take a deep breath. You are safe on our street. Look towards the left at house number 14. We are right here.",
-            "It is chilly outside Mrs. Sunita. Let's head back inside to the warm living room and sit on your favorite armchair with your tea."
-        ];
-
-        function playAlertChime() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const o1 = ctx.createOscillator();
-                const g = ctx.createGain();
-                o1.type = 'sine';
-                o1.frequency.setValueAtTime(750, ctx.currentTime);
-                o1.frequency.exponentialRampToValueAtTime(1050, ctx.currentTime + 0.18);
-                g.gain.setValueAtTime(0.3, ctx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-                o1.connect(g);
-                g.connect(ctx.destination);
-                o1.start();
-                o1.stop(ctx.currentTime + 0.4);
-            } catch (e) {}
-        }
-
-        async function sendVoiceAssist(text) {
-            const statusMsg = document.getElementById('voiceStatusMsg');
-            if (statusMsg) {
-                statusMsg.textContent = 'Transmitting voice guidance to HUD...';
-                statusMsg.style.color = '#fbbf24';
-            }
-
-            // Speak locally in Caretaker portal for immediate audio feedback
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const u = new SpeechSynthesisUtterance(text);
-                u.rate = 0.92;
-                u.pitch = 1.05;
-                window.speechSynthesis.speak(u);
-            }
-
-            try {
-                const res = await fetch('/api/caregiver/voice-assist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: text,
-                        sender: 'Caregiver Ananya',
-                        patientName: 'Mrs. Sunita Sharma',
-                        type: 'wandering_redirection'
-                    })
-                });
-                if (statusMsg) {
-                    statusMsg.textContent = '✅ Delivered & Spoken to Patient HUD!';
-                    statusMsg.style.color = '#34d399';
-                }
-            } catch (err) {
-                if (statusMsg) {
-                    statusMsg.textContent = '✅ Voice Spoken via Smart Audio!';
-                    statusMsg.style.color = '#34d399';
-                }
-            }
-
-            // Append to transmission log
-            const logBox = document.getElementById('voiceLogContainer');
-            if (logBox) {
-                const now = new Date().toLocaleTimeString();
-                const logItem = document.createElement('div');
-                logItem.style.color = '#e2e8f0';
-                logItem.innerHTML = '<span style="color: #34d399; font-weight: bold;">[' + now + ']</span> 📢 <strong>Transmitted:</strong> "' + text + '"<br><span style="color: #94a3b8; font-size: 11px; margin-left: 14px;">Telemetry: Patient acknowledged audio cue. Rotational pacing stopped. Turning towards green doorway.</span>';
-                logBox.prepend(logItem);
-            }
-        }
-
-        function sendPresetVoice(idx) {
-            const text = presetMessages[idx] || presetMessages[0];
-            const inp = document.getElementById('customVoiceInput');
-            if (inp) inp.value = text;
-            sendVoiceAssist(text);
-        }
-
-        function sendCustomVoice() {
-            const inp = document.getElementById('customVoiceInput');
-            const text = inp ? inp.value.trim() : '';
-            if (!text) return;
-            sendVoiceAssist(text);
-        }
-
-        let isIntercomActive = false;
-        function startIntercom() {
-            isIntercomActive = true;
-            const btn = document.getElementById('btnPushToTalk');
-            if (btn) {
-                btn.style.background = '#dc2626';
-                btn.style.color = 'white';
-                btn.textContent = '🔴 Transmitting Live Audio to HUD...';
-            }
-            playAlertChime();
-        }
-
-        function stopIntercom() {
-            if (!isIntercomActive) return;
-            isIntercomActive = false;
-            const btn = document.getElementById('btnPushToTalk');
-            if (btn) {
-                btn.style.background = 'rgba(244,63,94,0.15)';
-                btn.style.color = '#fda4af';
-                btn.textContent = '🎙️ Hold to Speak Live Audio Intercom';
-            }
-            sendVoiceAssist("Mrs. Sunita, this is Ananya speaking live. Please stand still, I am opening the front door right now.");
-        }
-
-        function simulateScenario(type) {
-            const alertBox = document.getElementById('activeIncidentBox');
-            const locBadge = document.getElementById('statusBadgeLocation');
-            const geoBadge = document.getElementById('statusBadgeGeofence');
-            const vitals = document.getElementById('vitalsText');
-            const blip = document.getElementById('patientBlip');
-            const dist = document.getElementById('radarDistanceText');
-            const disp = document.getElementById('dispText');
-
-            if (type === 'wandering') {
-                playAlertChime();
-                if (alertBox) alertBox.style.display = 'block';
-                if (locBadge) {
-                    locBadge.style.background = 'rgba(239,68,68,0.2)';
-                    locBadge.style.color = '#f87171';
-                    locBadge.style.borderColor = 'rgba(239,68,68,0.4)';
-                    locBadge.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: pulse 1s infinite;"></span> 🚨 Outside Perimeter (Front Gate, 14th Cross Rd)';
-                }
-                if (geoBadge) geoBadge.style.display = 'inline-block';
-                if (vitals) {
-                    vitals.textContent = '💓 96 BPM (Elevated Stress / Pacing)';
-                    vitals.style.color = '#f43f5e';
-                }
-                if (blip) blip.setAttribute('transform', 'translate(195, 45)');
-                if (dist) {
-                    dist.textContent = '35m Outside Perimeter';
-                    dist.style.color = '#f43f5e';
-                }
-                if (disp) {
-                    disp.textContent = '35m North-East';
-                    disp.style.color = '#f43f5e';
-                }
-            } else if (type === 'safe_return') {
-                if (alertBox) alertBox.style.display = 'none';
-                if (locBadge) {
-                    locBadge.style.background = 'rgba(16,185,129,0.2)';
-                    locBadge.style.color = '#34d399';
-                    locBadge.style.borderColor = 'rgba(16,185,129,0.4)';
-                    locBadge.innerHTML = '🟢 Safe Zone (Indoor Living Room)';
-                }
-                if (geoBadge) geoBadge.style.display = 'none';
-                if (vitals) {
-                    vitals.textContent = '💓 76 BPM (Normal / Calm)';
-                    vitals.style.color = '#34d399';
-                }
-                if (blip) blip.setAttribute('transform', 'translate(150, 100)');
-                if (dist) {
-                    dist.textContent = 'Inside Safe Zone (0m)';
-                    dist.style.color = '#34d399';
-                }
-                if (disp) {
-                    disp.textContent = 'Living Room (Armchair)';
-                    disp.style.color = '#34d399';
-                }
-                
-                const logBox = document.getElementById('voiceLogContainer');
-                if (logBox) {
-                    const now = new Date().toLocaleTimeString();
-                    const logItem = document.createElement('div');
-                    logItem.style.color = '#34d399';
-                    logItem.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> ✅ <strong>Resolved:</strong> Patient followed voice guidance and safely returned to living room.';
-                    logBox.prepend(logItem);
-                }
-            } else if (type === 'sundowning') {
-                playAlertChime();
-                if (alertBox) alertBox.style.display = 'block';
-                if (locBadge) {
-                    locBadge.style.background = 'rgba(245,158,11,0.2)';
-                    locBadge.style.color = '#fbbf24';
-                    locBadge.style.borderColor = 'rgba(245,158,11,0.4)';
-                    locBadge.innerHTML = '🌙 Living Room (Sundowning Restlessness)';
-                }
-                if (vitals) {
-                    vitals.textContent = '💓 88 BPM (Evening Shadow Anxiety)';
-                    vitals.style.color = '#fbbf24';
-                }
-                if (blip) blip.setAttribute('transform', 'translate(150, 100)');
-                if (dist) {
-                    dist.textContent = 'Indoors (Living Room)';
-                    dist.style.color = '#fbbf24';
-                }
-                sendVoiceAssist("Mrs. Sunita, evening has arrived. Everything is peaceful at home. We are turning on the warm amber lights and playing your favorite soothing melodies.");
-            }
-        }
-
-        function switchTab(tab) {
-            const tabOCR = document.getElementById('tabOCR');
-            const tabCare = document.getElementById('tabCare');
-            const btnOCR = document.getElementById('tabBtnOCR');
-            const btnCare = document.getElementById('tabBtnCare');
-            if (tab === 'ocr') {
-                tabOCR.style.display = 'block';
-                tabCare.style.display = 'none';
-                btnOCR.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
-                btnOCR.style.color = 'white';
-                btnCare.style.background = 'transparent';
-                btnCare.style.color = '#94a3b8';
-            } else {
-                tabOCR.style.display = 'none';
-                tabCare.style.display = 'block';
-                btnCare.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
-                btnCare.style.color = 'white';
-                btnOCR.style.background = 'transparent';
-                btnOCR.style.color = '#94a3b8';
-            }
-        }
-
         const sampleReports = {
             1: \`CLINICAL NEUROLOGY COMPREHENSIVE REPORT
 Patient Name: Eleanor Vance
@@ -887,7 +918,7 @@ Date: 12 / 05 / 2027\`
         }
 
         // Set default sample on load to Vasundhara Hospital report
-        loadSample(7);
+        loadSample(4);
 
         // Drag & Drop Handlers
         const dropzone = document.getElementById('dropzone');
@@ -1049,4 +1080,13 @@ Date: 12 / 05 / 2027\`
     </script>
 </body>
 </html>
-    
+    `);
+});
+
+// ── Start Server ─────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+    console.log(`\n📄 Mnemosync OCR & Longitudinal Progression Hub running on http://localhost:${PORT}`);
+    console.log(`   Web Dashboard: http://localhost:${PORT}/`);
+    console.log(`   Health: http://localhost:${PORT}/health\n`);
+});
