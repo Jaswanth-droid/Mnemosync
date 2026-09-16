@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { connectHub, emitFaceDetected, emitConversationEnded, onCognitiveAlert, CognitiveAlert } from './socketClient';
+import { connectHub, emitFaceDetected, emitConversationEnded, onCognitiveAlert, emitPatientAssistRequest, CognitiveAlert } from './socketClient';
 import { 
     Brain, 
     User, 
@@ -173,6 +173,32 @@ function App() {
     // Cognitive alert from CBAE module
     const [cognitiveAlert, setCognitiveAlert] = useState<CognitiveAlert | null>(null);
     const [caregiverVoiceAlert, setCaregiverVoiceAlert] = useState<{ message: string; sender: string } | null>(null);
+    const [isWalkAssistSent, setIsWalkAssistSent] = useState(false);
+
+    const triggerPatientWalkAssist = useCallback(() => {
+        setIsWalkAssistSent(true);
+        emitPatientAssistRequest({
+            patientName: 'Mrs. Sunita Sharma',
+            scenario: 'Outside Walk Disorientation — Forgot destination',
+            trigger: 'button',
+            transcript: 'Patient pressed "I Forgot Where To Go" button on HUD',
+            location: '14th Cross Rd (72m North-East, Near Park)',
+            missingItems: ['Home Keys', 'Walking Stick'],
+            timestamp: new Date().toLocaleTimeString()
+        });
+
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance("Mrs. Sunita, please pause and stay right where you are. I have notified your caregiver Ananya, she is guiding you now.");
+            u.rate = 0.92;
+            u.pitch = 1.05;
+            window.speechSynthesis.speak(u);
+        }
+
+        setTimeout(() => {
+            setIsWalkAssistSent(false);
+        }, 20000);
+    }, []);
 
     // Cinematic Intro States
     const [introComplete, setIntroComplete] = useState(false);
@@ -452,6 +478,25 @@ function App() {
                     </div>
                 )}
 
+                {/* Floating Patient Walk Assistance Trigger Confirmation */}
+                {isWalkAssistSent && (
+                    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-rose-950 via-slate-900 to-rose-950 border-2 border-rose-400 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-xl backdrop-blur-xl animate-pulse">
+                        <div className="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center text-2xl flex-shrink-0">
+                            📍
+                        </div>
+                        <div className="flex-1">
+                            <div className="text-xs font-bold text-rose-300 uppercase tracking-wider flex items-center gap-2">
+                                <span>Caregiver Ananya Informed</span>
+                                <span className="bg-rose-500/30 px-2 py-0.5 rounded text-[10px] text-rose-200">Guidance Incoming</span>
+                            </div>
+                            <div className="text-sm font-semibold text-white mt-1">
+                                "Please pause right there on the sidewalk. Ananya has your GPS location and is guiding you right now."
+                            </div>
+                        </div>
+                        <button onClick={() => setIsWalkAssistSent(false)} className="text-gray-400 hover:text-white text-lg px-2">✕</button>
+                    </div>
+                )}
+
                 {/* Top Pastel Navigation Bar */}
                 <header className="app-header w-full mb-3 px-4 py-2.5 rounded-2xl flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -488,6 +533,50 @@ function App() {
 
                     {/* Quick Action Badges */}
                     <div className="flex items-center gap-2">
+                        {/* Outside Walk Disorientation Assist Button */}
+                        <button
+                            onClick={triggerPatientWalkAssist}
+                            className="quick-btn"
+                            style={{
+                                background: isWalkAssistSent 
+                                    ? 'linear-gradient(135deg, #059669, #10b981)' 
+                                    : 'linear-gradient(135deg, #e11d48, #f43f5e)',
+                                color: 'white',
+                                border: 'none',
+                                fontWeight: 700,
+                                boxShadow: '0 4px 14px rgba(225, 29, 72, 0.4)',
+                                cursor: 'pointer',
+                                padding: '6px 14px',
+                                borderRadius: '10px'
+                            }}
+                            title="Touch if you are outside and forgot where to go"
+                        >
+                            <span>🚶</span>
+                            <span>{isWalkAssistSent ? '✓ Ananya Notified' : '🆘 I Forgot Where To Go'}</span>
+                        </button>
+
+                        <a
+                            href="http://localhost:5174/safety"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="quick-btn"
+                            style={{
+                                background: 'rgba(56, 189, 248, 0.15)',
+                                color: '#38bdf8',
+                                border: '1px solid rgba(56, 189, 248, 0.4)',
+                                fontWeight: 700,
+                                textDecoration: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 12px',
+                                borderRadius: '10px'
+                            }}
+                            title="Open Caregiver Safety Portal on port 5174"
+                        >
+                            <Shield size={14} /> Caregiver Portal ↗
+                        </a>
+
                         <button
                             onClick={() => setIsDashboardOpen(true)}
                             className="quick-btn"

@@ -64,6 +64,19 @@ app.get('/', (_req, res) => {
     res.sendFile(path.join(__dirname, 'caretaker.html'));
 });
 
+// ── Dedicated Caregiver Live Monitor & Safety Portal ──
+app.get('/safety', (_req, res) => {
+    res.sendFile(path.join(__dirname, 'caregiverSafety.html'));
+});
+
+app.get('/caregiver', (_req, res) => {
+    res.sendFile(path.join(__dirname, 'caregiverSafety.html'));
+});
+
+app.get('/live-monitor', (_req, res) => {
+    res.sendFile(path.join(__dirname, 'caregiverSafety.html'));
+});
+
 // ── OCR & Report Analysis Endpoints ──
 app.post('/api/ocr/upload', upload.single('reportFile'), async (req, res) => {
     try {
@@ -191,6 +204,62 @@ app.post('/api/caregiver/voice-assist', (req, res) => {
     res.json({ success: true, delivered: true, message, timestamp: new Date().toLocaleTimeString() });
 });
 
+// ── Patient Assist Request Endpoint (e.g., Forgot Where To Go on Outdoor Walk) ──
+app.post('/api/patient/assist-request', (req, res) => {
+    const {
+        patientName = 'Mrs. Sunita Sharma',
+        scenario = 'Outside Walk Disorientation — Forgot destination',
+        trigger = 'button',
+        transcript = 'Patient pressed Outside Walk Assist button',
+        location = '14th Cross Rd (72m North-East, Near Park)',
+        missingItems = ['Home Keys', 'Walking Stick'],
+        timestamp = new Date().toLocaleTimeString()
+    } = req.body;
+
+    console.log(`[Caretaker 5174 Alert] 🚨 Patient Assist Request from ${patientName}: ${scenario} (${trigger})`);
+    
+    const payload = {
+        patientName,
+        scenario,
+        trigger,
+        transcript,
+        location,
+        missingItems,
+        timestamp
+    };
+
+    if (io) {
+        io.emit('patient_assist_request', payload);
+    }
+
+    // Cross-forward to Hub on port 5000 if active
+    try {
+        const postData = JSON.stringify(payload);
+        const request = http.request({
+            hostname: 'localhost',
+            port: 5000,
+            path: '/api/patient/assist-request-internal',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        });
+        request.on('error', () => {});
+        request.write(postData);
+        request.end();
+    } catch (e) {}
+
+    res.json({ success: true, received: true, payload });
+});
+
+app.post('/api/patient/assist-request-internal', (req, res) => {
+    if (io) {
+        io.emit('patient_assist_request', req.body);
+    }
+    res.json({ success: true });
+});
+
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'Mnemosync Caretaker Portal', port: process.env.CARETAKER_PORT || 5174 });
 });
@@ -202,6 +271,13 @@ const io = new Server(server, { cors: { origin: '*' } });
 
 io.on('connection', (socket) => {
     console.log('[Caretaker Socket] Client connected:', socket.id);
+    socket.on('patient_assist_request', (data) => {
+        console.log('[Caretaker Socket] Relaying patient_assist_request:', data);
+        io.emit('patient_assist_request', data);
+    });
+    socket.on('caregiver_voice_assist', (data) => {
+        io.emit('caregiver_voice_assist', data);
+    });
 });
 
 server.listen(PORT, () => {

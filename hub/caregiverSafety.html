@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ Caregiver Live Monitor & Safety Portal — Mnemosync</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #090d16;
+            color: #f1f5f9;
+            padding: 24px 32px;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            background: rgba(255,255,255,0.06);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .nav-tab-btn {
+            border: none;
+            padding: 7px 16px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-tab-btn.active {
+            background: linear-gradient(135deg, #0284c7, #6366f1);
+            color: white;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+        }
+        .nav-tab-btn.inactive {
+            background: transparent;
+            color: #94a3b8;
+        }
+        .nav-tab-btn.inactive:hover {
+            color: #e2e8f0;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .badge-pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.3); } }
+        @keyframes danger-pulse { 0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.8); } 50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.85); border-color: #ef4444; } }
+
+        .patient-bar {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 24px;
+        }
+        @media (max-width: 1100px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: rgba(18, 24, 38, 0.85);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            backdrop-filter: blur(12px);
+            margin-bottom: 24px;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 17px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #f8fafc;
+        }
+
+        .alert-card {
+            border: 1.5px solid #ef4444;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(15, 23, 42, 0.9));
+            animation: danger-pulse 2s infinite;
+        }
+
+        .quick-cue-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #f1f5f9;
+        }
+        .quick-cue-btn:hover {
+            background: rgba(99, 102, 241, 0.18);
+            border-color: #818cf8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25);
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, #0284c7, #6366f1);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+        }
+
+        .log-box {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 12px;
+            max-height: 180px;
+            overflow-y: auto;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1 class="title">🛡️ Mnemosync Caregiver Live Monitor & Safety Portal</h1>
+            <p class="subtitle">Real-Time Geofence Telemetry, Outdoor Disorientation Alert & Remote Two-Way Voice Assistance</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <div class="nav-tabs">
+                <button class="nav-tab-btn inactive" onclick="window.location.href='/'">
+                    📄 Clinical OCR & Progression
+                </button>
+                <button class="nav-tab-btn active" onclick="window.location.href='/safety'">
+                    🛡️ Caregiver Live Monitor & Safety
+                </button>
+            </div>
+            <span class="badge" id="hubConnBadge" style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3);">
+                <span class="badge-pulse"></span>
+                <span id="hubConnText">HUD Link Active (Port 5173)</span>
+            </span>
+        </div>
+    </div>
+
+    <div class="patient-bar">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #ec4899, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; box-shadow: 0 4px 12px rgba(236,72,153,0.3);">
+                🌸
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <h2 style="font-size: 18px; font-weight: 800; color: white;">Mrs. Sunita Sharma</h2>
+                    <span style="font-size: 11px; background: rgba(244,63,94,0.2); color: #fda4af; border: 1px solid rgba(244,63,94,0.4); padding: 2px 9px; border-radius: 999px; font-weight: 700;">Moderate Alzheimer's (CDR 1.0)</span>
+                </div>
+                <div style="display: flex; gap: 16px; margin-top: 5px; font-size: 12px; color: #94a3b8; flex-wrap: wrap;">
+                    <span>👤 Caregiver: <strong style="color: #cbd5e1;">Ananya Sharma (Daughter)</strong></span>
+                    <span>📍 Safe Zone: <strong style="color: #38bdf8;">Home (14 Park Lane)</strong></span>
+                    <span>🕒 Routine: <strong style="color: #cbd5e1;">Morning Walk (06:30 - 07:15 AM)</strong></span>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div id="statusBadgeLocation" style="padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.4);">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: pulse 1s infinite;"></span>
+                <span id="locStatusText">🚨 Outside Perimeter (14th Cross Rd, 72m NE)</span>
+            </div>
+            <div id="vitalsBadge" style="background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 8px; font-size: 12px; border: 1px solid rgba(255,255,255,0.1); color: #fbbf24; font-weight: 700;">
+                💓 96 BPM (Pacing / Agitation)
+            </div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div>
+            <div class="card alert-card" id="incidentCard">
+                <div class="card-header" style="margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 20px;">🚨</span>
+                        <h2 class="card-title" style="color: #fca5a5; font-size: 18px;" id="incidentTitle">
+                            PATIENT WALK DISORIENTATION ALERT
+                        </h2>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="toggleChimeMute()" id="muteChimeBtn" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer;">
+                            🔊 Sound Alert
+                        </button>
+                        <span class="badge" style="background: rgba(239,68,68,0.3); color: #fca5a5; font-size: 11px;">Immediate Attention Required</span>
+                    </div>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.35); border-radius: 10px; padding: 14px; margin-bottom: 14px; border: 1px solid rgba(239,68,68,0.3);">
+                    <div style="font-size: 13px; color: #f1f5f9; line-height: 1.6;">
+                        <strong style="color: #f87171;">Situation:</strong> Mrs. Sunita stepped outside for a walk alone and <strong>forgot where to go</strong>. She paused on the sidewalk and tapped the assistance trigger on her HUD.
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; font-size: 12px;">
+                        <div style="background: rgba(255,255,255,0.04); padding: 8px 10px; border-radius: 6px;">
+                            <span style="color: #94a3b8;">Trigger Source:</span><br>
+                            <strong style="color: #38bdf8;" id="triggerSourceText">Touch Button: "I Forgot Where To Go"</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.04); padding: 8px 10px; border-radius: 6px;">
+                            <span style="color: #94a3b8;">Current Location:</span><br>
+                            <strong style="color: #f87171;" id="incidentLocationText">14th Cross Rd (72m North-East, Near Park)</strong>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; background: rgba(239,68,68,0.12); padding: 8px 12px; border-radius: 6px; font-size: 12px; color: #fecdd3; display: flex; align-items: center; gap: 8px;">
+                        <span>⚠️</span>
+                        <span><strong>Missing Essentials:</strong> Keys left on console table • Walking stick not carried</span>
+                    </div>
+                    <div id="patientSpeechQuoteBox" style="margin-top: 10px; background: rgba(56,189,248,0.1); border-left: 3px solid #38bdf8; padding: 8px 12px; border-radius: 4px; font-size: 13px; color: #bae6fd;">
+                        🗣️ <em>"I went for a walk and forgot where to go. Please help me get back."</em>
+                    </div>
+                </div>
+
+                <div style="font-size: 13px; color: #e2e8f0; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span>🎙️</span> Choose Directional Guidance to Speak to Patient's HUD:
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>🔊</span> Remote Two-Way Voice Assistance Console
+                    </h2>
+                    <span style="font-size: 11px; background: rgba(56,189,248,0.15); color: #38bdf8; padding: 3px 8px; border-radius: 999px; font-weight: 700;">
+                        Direct HUD Audio Broadcast
+                    </span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                    <div class="quick-cue-btn" onclick="sendVoiceAssist(presetMessages[0], 'Walk Guidance')">
+                        <div style="font-weight: 700; color: #38bdf8; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                            <span>🧭</span> 1. "Walk Guidance — Turn Back"
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                            "Sunita, you are on your walk on 14th Cross. Look left for the bakery. Turn around 180° towards our blue gate..."
+                        </div>
+                    </div>
+
+                    <div class="quick-cue-btn" onclick="sendVoiceAssist(presetMessages[1], 'Wait For Me')">
+                        <div style="font-weight: 700; color: #34d399; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                            <span>🏃</span> 2. "Stay Put — Coming Outside"
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                            "Mom, please stay right where you are on the sidewalk. You are safe. I am stepping outside right now to walk with you."
+                        </div>
+                    </div>
+
+                    <div class="quick-cue-btn" onclick="sendVoiceAssist(presetMessages[2], 'Forgot Keys')">
+                        <div style="font-weight: 700; color: #f59e0b; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                            <span>🔑</span> 3. "Keys are Safe Inside"
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                            "Don't worry Mrs. Sunita, your keys and walking stick are safe on the hallway table. Pause and wait for me."
+                        </div>
+                    </div>
+
+                    <div class="quick-cue-btn" onclick="sendVoiceAssist(presetMessages[3], 'Soothing Calming')">
+                        <div style="font-weight: 700; color: #c084fc; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                            <span>🍵</span> 4. "Warm Tea Reassurance"
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                            "Everything is alright Sunita. Take three deep breaths. Let's head back inside to your armchair and have warm tea."
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                    <label style="font-size: 12px; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 8px;">
+                        Custom Caregiver Voice Guidance:
+                    </label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="customVoiceInput" 
+                               value="Mrs. Sunita, this is Ananya. Please stay right there, I am walking out to meet you right now."
+                               style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: white; font-size: 13px; outline: none;"
+                               onkeydown="if(event.key === 'Enter') sendCustomVoice()">
+                        <button class="btn-action" onclick="sendCustomVoice()">
+                            <span>📢</span> Speak to HUD
+                        </button>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+                        <button id="pttBtn" onmousedown="startPTT()" onmouseup="stopPTT()" ontouchstart="startPTT()" ontouchend="stopPTT()"
+                                style="background: rgba(244,63,94,0.15); border: 1px solid rgba(244,63,94,0.4); color: #fda4af; font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;">
+                            <span>🎙️</span> Hold to Speak Live (PTT)
+                        </button>
+                        <span id="voiceStatusMsg" style="font-size: 12px; color: #34d399; font-weight: 600;">
+                            Voice channel ready
+                        </span>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">Recent Voice Guidance Log:</span>
+                        <span style="font-size: 11px; color: #64748b;">Delivered via Web Speech & WebSocket</span>
+                    </div>
+                    <div class="log-box" id="voiceLogContainer">
+                        <div style="color: #38bdf8;">
+                            <span style="font-weight: bold;">[06:44 AM]</span> 📢 <strong>Ananya:</strong> "Sunita, you are on your morning walk on 14th Cross. The blue bakery is to your left. Turn around and walk 50 meters back to our gate..."
+                        </div>
+                        <div style="color: #94a3b8;">
+                            <span style="font-weight: bold;">[06:38 AM]</span> ⚠️ <strong>System:</strong> Patient exited front gate alone. Geofence boundary crossed.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>📡</span> Outdoor Geofence Radar & Walk Path
+                    </h2>
+                    <span id="radarDistanceText" style="font-size: 12px; color: #f87171; font-weight: 700;">
+                        72m Outside Perimeter
+                    </span>
+                </div>
+
+                <div style="position: relative; width: 100%; height: 260px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                    <svg width="100%" height="100%" viewBox="0 0 300 240" style="overflow: visible;">
+                        <circle cx="150" cy="120" r="100" fill="none" stroke="rgba(239,68,68,0.3)" stroke-width="1.5" stroke-dasharray="4,4" />
+                        <circle cx="150" cy="120" r="65" fill="none" stroke="rgba(245,158,11,0.35)" stroke-width="1.5" />
+                        <circle cx="150" cy="120" r="35" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.5)" stroke-width="2" />
+
+                        <line x1="150" y1="10" x2="150" y2="230" stroke="rgba(255,255,255,0.07)" stroke-width="1" />
+                        <line x1="30" y1="120" x2="270" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="1" />
+
+                        <text x="154" y="105" fill="#34d399" font-size="9" font-weight="700">HOME SAFE (0-25m)</text>
+                        <text x="154" y="70" fill="#fbbf24" font-size="9" font-weight="700">SIDEWALK (50m)</text>
+                        <text x="154" y="32" fill="#f87171" font-size="9" font-weight="700">14TH CROSS HAZARD (>50m)</text>
+
+                        <circle cx="150" cy="120" r="6" fill="#10b981" />
+                        <text x="158" y="124" fill="#6ee7b7" font-size="10" font-weight="bold">🏠 Home (Porch)</text>
+
+                        <circle cx="175" cy="100" r="4" fill="#fbbf24" />
+                        <text x="182" y="103" fill="#fde68a" font-size="9">🚪 Front Gate</text>
+
+                        <circle cx="210" cy="65" r="4" fill="#a855f7" />
+                        <text x="216" y="68" fill="#d8b4fe" font-size="9">🏪 Bakery</text>
+
+                        <path id="walkPathLine" d="M 150 120 L 175 100 L 210 65 L 225 45" fill="none" stroke="rgba(244,63,94,0.6)" stroke-width="2.5" stroke-dasharray="3,3" />
+
+                        <g id="patientBlip" transform="translate(225, 45)">
+                            <circle cx="0" cy="0" r="16" fill="rgba(239,68,68,0.25)">
+                                <animate attributeName="r" values="8;20;8" dur="1.8s" repeatCount="indefinite" />
+                                <animate attributeName="opacity" values="0.8;0;0.8" dur="1.8s" repeatCount="indefinite" />
+                            </circle>
+                            <circle cx="0" cy="0" r="7" fill="#ef4444" stroke="#ffffff" stroke-width="2" />
+                            <text x="10" y="4" fill="#ffffff" font-size="10" font-weight="800" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.8))">Sunita (Here)</text>
+                        </g>
+
+                        <line id="returnArrow" x1="225" y1="45" x2="165" y2="108" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,2" />
+                    </svg>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; font-size: 12px;">
+                    <div style="background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 8px;">
+                        <span style="color: #94a3b8;">Displacement:</span><br>
+                        <strong style="color: #f87171;" id="dispText">72m North-East</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 8px;">
+                        <span style="color: #94a3b8;">Pacing Cadence:</span><br>
+                        <strong style="color: #fbbf24;" id="speedCadenceText">Stationary (Paused 90s)</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>🧪</span> Interactive Safety Demo Simulator
+                    </h2>
+                    <span style="font-size: 11px; color: #94a3b8;">Test Scenarios Instantly</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button onclick="simulateWalkDisorientation()" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between;">
+                        <span>🚨 1. Simulate: Patient Pressed 'Forgot Where To Go'</span>
+                        <span>Trigger ↗</span>
+                    </button>
+                    <button onclick="simulateVoiceAskDisorientation()" style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #fde68a; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between;">
+                        <span>🗣️ 2. Simulate: Patient Asked 'Where do I go?'</span>
+                        <span>Trigger ↗</span>
+                    </button>
+                    <button onclick="simulateSafeReturn()" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #86efac; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between;">
+                        <span>🟢 3. Simulate: Safely Guided Back to Living Room</span>
+                        <span>Resolve ✓</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const presetMessages = [
+            "Sunita, you are on your morning walk on 14th Cross. The blue bakery is to your left. Turn around and walk 50 meters back to our gate, I am waiting for you.",
+            "Mom, please stay right where you are on the sidewalk. You are safe. I have your location and I am stepping outside right now to walk with you.",
+            "Don't worry Mrs. Sunita, your keys and walking stick are safe on the hallway table. Pause right there and wait for me.",
+            "Everything is safe Sunita. Take three deep breaths. Ananya is with you on speaker. Please sit on the bench right next to you until I arrive."
+        ];
+
+        let chimeMuted = false;
+
+        function playAlertChime() {
+            if (chimeMuted) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o1 = ctx.createOscillator();
+                const g = ctx.createGain();
+                o1.type = 'sine';
+                o1.frequency.setValueAtTime(800, ctx.currentTime);
+                o1.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.15);
+                g.gain.setValueAtTime(0.35, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                o1.connect(g);
+                g.connect(ctx.destination);
+                o1.start();
+                o1.stop(ctx.currentTime + 0.35);
+            } catch (e) {}
+        }
+
+        function toggleChimeMute() {
+            chimeMuted = !chimeMuted;
+            const btn = document.getElementById('muteChimeBtn');
+            btn.textContent = chimeMuted ? '🔇 Unmute Chime' : '🔊 Sound Alert';
+        }
+
+        async function sendVoiceAssist(text, category = 'Directional Guidance') {
+            const statusMsg = document.getElementById('voiceStatusMsg');
+            if (statusMsg) {
+                statusMsg.textContent = 'Transmitting voice guidance to HUD...';
+                statusMsg.style.color = '#fbbf24';
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.rate = 0.95;
+                u.pitch = 1.05;
+                window.speechSynthesis.speak(u);
+            }
+
+            try {
+                const res = await fetch('/api/caregiver/voice-assist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        sender: 'Caregiver Ananya',
+                        patientName: 'Mrs. Sunita Sharma',
+                        category
+                    })
+                });
+                const data = await res.json();
+                if (statusMsg) {
+                    statusMsg.textContent = 'Guidance delivered to HUD at ' + (data.timestamp || new Date().toLocaleTimeString());
+                    statusMsg.style.color = '#34d399';
+                }
+            } catch (err) {
+                if (statusMsg) {
+                    statusMsg.textContent = 'Direct WebSocket broadcast active.';
+                    statusMsg.style.color = '#34d399';
+                }
+            }
+
+            const logBox = document.getElementById('voiceLogContainer');
+            if (logBox) {
+                const now = new Date().toLocaleTimeString();
+                const item = document.createElement('div');
+                item.style.color = '#38bdf8';
+                item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> 📢 <strong>Ananya:</strong> "' + text + '"';
+                logBox.prepend(item);
+            }
+        }
+
+        function sendCustomVoice() {
+            const input = document.getElementById('customVoiceInput');
+            if (!input || !input.value.trim()) return;
+            sendVoiceAssist(input.value.trim(), 'Custom Caregiver Voice');
+        }
+
+        let isPTT = false;
+        function startPTT() {
+            isPTT = true;
+            const btn = document.getElementById('pttBtn');
+            btn.style.background = '#ef4444';
+            btn.style.color = 'white';
+            btn.innerHTML = '🔴 Broadcasting Live Voice...';
+            document.getElementById('voiceStatusMsg').textContent = 'Live Audio Intercom OPEN';
+            document.getElementById('voiceStatusMsg').style.color = '#f87171';
+            playAlertChime();
+        }
+
+        function stopPTT() {
+            if (!isPTT) return;
+            isPTT = false;
+            const btn = document.getElementById('pttBtn');
+            btn.style.background = 'rgba(244,63,94,0.15)';
+            btn.style.color = '#fda4af';
+            btn.innerHTML = '<span>🎙️</span> Hold to Speak Live (PTT)';
+            document.getElementById('voiceStatusMsg').textContent = 'Voice guidance delivered to patient speaker';
+            document.getElementById('voiceStatusMsg').style.color = '#34d399';
+            sendVoiceAssist("Sunita, I am with you on speaker. Keep calm, I am right around the corner.", 'Live Push-to-Talk');
+        }
+
+        function simulateWalkDisorientation() {
+            playAlertChime();
+            const inc = document.getElementById('incidentCard');
+            inc.style.display = 'block';
+            document.getElementById('incidentTitle').textContent = 'PATIENT WALK DISORIENTATION ALERT';
+            document.getElementById('triggerSourceText').textContent = 'Touch Button: "I Forgot Where To Go"';
+            document.getElementById('patientSpeechQuoteBox').innerHTML = '📱 <em>Patient touched HUD Assist button: "I went for a walk and forgot where to go."</em>';
+            document.getElementById('incidentLocationText').textContent = '14th Cross Rd (72m North-East, Near Park)';
+            document.getElementById('locStatusText').textContent = '🚨 Outside Perimeter (14th Cross Rd, 72m NE)';
+            document.getElementById('radarDistanceText').textContent = '72m Outside Perimeter';
+            document.getElementById('dispText').textContent = '72m North-East';
+            document.getElementById('speedCadenceText').textContent = 'Stationary (Paused 90s)';
+            
+            const blip = document.getElementById('patientBlip');
+            if (blip) blip.setAttribute('transform', 'translate(225, 45)');
+
+            const logBox = document.getElementById('voiceLogContainer');
+            if (logBox) {
+                const now = new Date().toLocaleTimeString();
+                const item = document.createElement('div');
+                item.style.color = '#f87171';
+                item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> 🚨 <strong>Alert:</strong> Patient tapped "I Forgot Where To Go" on HUD while outside.';
+                logBox.prepend(item);
+            }
+        }
+
+        function simulateVoiceAskDisorientation() {
+            playAlertChime();
+            const inc = document.getElementById('incidentCard');
+            inc.style.display = 'block';
+            document.getElementById('incidentTitle').textContent = 'VOICE QUERY: WALK DISORIENTATION';
+            document.getElementById('triggerSourceText').textContent = 'Spoken Voice Query (Speech Recognition)';
+            document.getElementById('patientSpeechQuoteBox').innerHTML = '🗣️ <em>"Where do I go? I went for a walk and forgot which way is home."</em>';
+            document.getElementById('incidentLocationText').textContent = '14th Cross Rd (72m North-East)';
+            document.getElementById('locStatusText').textContent = '🚨 Outside Perimeter (14th Cross Rd, 72m NE)';
+            document.getElementById('radarDistanceText').textContent = '72m Outside Perimeter';
+            document.getElementById('dispText').textContent = '72m North-East';
+
+            const logBox = document.getElementById('voiceLogContainer');
+            if (logBox) {
+                const now = new Date().toLocaleTimeString();
+                const item = document.createElement('div');
+                item.style.color = '#f59e0b';
+                item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> 🗣️ <strong>Patient Spoke:</strong> "Where do I go? I forgot which way is home."';
+                logBox.prepend(item);
+            }
+        }
+
+        function simulateSafeReturn() {
+            const inc = document.getElementById('incidentCard');
+            inc.style.borderColor = 'rgba(16,185,129,0.5)';
+            document.getElementById('incidentTitle').textContent = '✅ PATIENT SAFELY RETURNED HOME';
+            document.getElementById('incidentTitle').style.color = '#86efac';
+            document.getElementById('triggerSourceText').textContent = 'Safely Arrived at Living Room';
+            document.getElementById('patientSpeechQuoteBox').innerHTML = '🏡 <em>Patient is back inside the safe perimeter with family.</em>';
+            document.getElementById('incidentLocationText').textContent = 'Living Room (Armchair)';
+            document.getElementById('locStatusText').textContent = '🟢 Safe Zone (Indoor Living Room)';
+            document.getElementById('radarDistanceText').textContent = 'Inside Safe Zone (0m)';
+            document.getElementById('radarDistanceText').style.color = '#34d399';
+            document.getElementById('dispText').textContent = '0m (Living Room)';
+            document.getElementById('dispText').style.color = '#34d399';
+            document.getElementById('speedCadenceText').textContent = 'Resting';
+
+            const blip = document.getElementById('patientBlip');
+            if (blip) blip.setAttribute('transform', 'translate(150, 120)');
+
+            const logBox = document.getElementById('voiceLogContainer');
+            if (logBox) {
+                const now = new Date().toLocaleTimeString();
+                const item = document.createElement('div');
+                item.style.color = '#34d399';
+                item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> ✅ <strong>Resolved:</strong> Mrs. Sunita guided safely back to living room.';
+                logBox.prepend(item);
+            }
+        }
+
+        const socket = io();
+        socket.on('connect', () => {
+            console.log('[Safety Portal] Connected to Hub via WebSocket');
+            const badge = document.getElementById('hubConnBadge');
+            const txt = document.getElementById('hubConnText');
+            if (badge && txt) {
+                badge.style.background = 'rgba(34,197,94,0.15)';
+                badge.style.color = '#4ade80';
+                badge.style.borderColor = 'rgba(34,197,94,0.3)';
+                txt.textContent = 'HUD Link Active (Port 5173)';
+            }
+        });
+
+        socket.on('disconnect', () => {
+            const badge = document.getElementById('hubConnBadge');
+            const txt = document.getElementById('hubConnText');
+            if (badge && txt) {
+                badge.style.background = 'rgba(239,68,68,0.15)';
+                badge.style.color = '#f87171';
+                txt.textContent = 'HUD Link Reconnecting...';
+            }
+        });
+
+        socket.on('patient_assist_request', (data) => {
+            console.log('[Safety Portal] Received real-time patient assist request:', data);
+            playAlertChime();
+            const inc = document.getElementById('incidentCard');
+            if (inc) inc.style.display = 'block';
+
+            if (data.trigger === 'voice') {
+                document.getElementById('incidentTitle').textContent = 'VOICE QUERY: WALK DISORIENTATION';
+                document.getElementById('triggerSourceText').textContent = 'Spoken Voice Query (Speech Recognition)';
+            } else {
+                document.getElementById('incidentTitle').textContent = 'PATIENT WALK DISORIENTATION ALERT';
+                document.getElementById('triggerSourceText').textContent = 'Touch Button: "I Forgot Where To Go"';
+            }
+
+            if (data.transcript) {
+                document.getElementById('patientSpeechQuoteBox').innerHTML = '🗣️ <em>"' + data.transcript + '"</em>';
+            }
+            if (data.location) {
+                document.getElementById('incidentLocationText').textContent = data.location;
+                document.getElementById('locStatusText').textContent = '🚨 ' + data.location;
+            }
+
+            const logBox = document.getElementById('voiceLogContainer');
+            if (logBox) {
+                const now = data.timestamp || new Date().toLocaleTimeString();
+                const item = document.createElement('div');
+                item.style.color = '#f87171';
+                item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> 🚨 <strong>Real Patient Alert:</strong> ' + (data.transcript || 'Patient requested walk assistance.');
+                logBox.prepend(item);
+            }
+        });
+
+        setTimeout(() => playAlertChime(), 800);
+    </script>
+</body>
+</html>

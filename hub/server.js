@@ -259,6 +259,67 @@ app.post('/api/caregiver/voice-assist', (req, res) => {
     res.json({ success: true, delivered: true, message, timestamp: new Date().toLocaleTimeString() });
 });
 
+// Dedicated Caregiver Live Monitor & Safety Portal
+app.get('/safety', (_req, res) => {
+    res.sendFile(path.join(__dirname, 'caregiverSafety.html'));
+});
+
+app.get('/caregiver', (_req, res) => {
+    res.sendFile(path.join(__dirname, 'caregiverSafety.html'));
+});
+
+// Patient Assist Request Endpoint
+app.post('/api/patient/assist-request', (req, res) => {
+    const {
+        patientName = 'Mrs. Sunita Sharma',
+        scenario = 'Outside Walk Disorientation — Forgot destination',
+        trigger = 'button',
+        transcript = 'Patient pressed Outside Walk Assist button',
+        location = '14th Cross Rd (72m North-East, Near Park)',
+        missingItems = ['Home Keys', 'Walking Stick'],
+        timestamp = new Date().toLocaleTimeString()
+    } = req.body;
+
+    console.log(`[Hub:5000 Alert] 🚨 Patient Assist Request from ${patientName}: ${scenario} (${trigger})`);
+    
+    const payload = {
+        patientName,
+        scenario,
+        trigger,
+        transcript,
+        location,
+        missingItems,
+        timestamp
+    };
+
+    io.emit('patient_assist_request', payload);
+
+    // Cross forward to port 5174
+    try {
+        const postData = JSON.stringify(payload);
+        const request = http.request({
+            hostname: 'localhost',
+            port: 5174,
+            path: '/api/patient/assist-request-internal',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        });
+        request.on('error', () => {});
+        request.write(postData);
+        request.end();
+    } catch (e) {}
+
+    res.json({ success: true, received: true, payload });
+});
+
+app.post('/api/patient/assist-request-internal', (req, res) => {
+    io.emit('patient_assist_request', req.body);
+    res.json({ success: true });
+});
+
 // ── Interactive Web Dashboard UI ─────────────────────────────────────────────
 app.get('/', (_req, res) => {
     res.send(`

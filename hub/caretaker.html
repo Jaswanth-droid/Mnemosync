@@ -252,10 +252,10 @@
         </div>
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <div style="display: flex; gap: 6px; background: rgba(255,255,255,0.06); padding: 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
-                <button id="tabBtnOCR" onclick="switchTab('ocr')" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; color: white; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                <button id="tabBtnOCR" onclick="window.location.href='/'" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; color: white; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer;">
                     📄 Clinical OCR & Progression
                 </button>
-                <button id="tabBtnCare" onclick="switchTab('care')" style="background: transparent; border: none; color: #94a3b8; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                <button id="tabBtnCare" onclick="window.location.href='/safety'" style="background: transparent; border: none; color: #94a3b8; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#f8fafc'; this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
                     🛡️ Caregiver Live Monitor & Safety
                 </button>
             </div>
