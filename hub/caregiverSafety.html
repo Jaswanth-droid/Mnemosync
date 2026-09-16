@@ -702,6 +702,85 @@
             sendVoiceAssist(input.value.trim(), 'Custom Caregiver Voice');
         }
 
+        // ── Modal Speak button — sends text to patient HUD speaker ──────────────
+        async function sendModalCustomVoice() {
+            const input = document.getElementById('modalVoiceInput');
+            const statusEl = document.getElementById('modalVoiceStatus');
+            if (!input || !input.value.trim()) return;
+            const text = input.value.trim();
+
+            // Update status to sending
+            if (statusEl) {
+                statusEl.textContent = '📡 Transmitting to HUD…';
+                statusEl.style.color = '#fbbf24';
+            }
+
+            // POST to both ports so the patient HUD (connected to 5000) receives it
+            let delivered = false;
+            try {
+                const res = await fetch('/api/caregiver/voice-assist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        sender: 'Caregiver Ananya',
+                        patientName: 'Mrs. Sunita Sharma',
+                        category: 'Emergency Assistance'
+                    })
+                });
+                const data = await res.json();
+                if (data.success) delivered = true;
+            } catch(e) {}
+
+            // Fallback: also POST directly to port 5000 in case socket didn't relay
+            try {
+                await fetch('http://localhost:5000/api/caregiver/voice-assist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        sender: 'Caregiver Ananya',
+                        patientName: 'Mrs. Sunita Sharma',
+                        category: 'Emergency Assistance'
+                    })
+                });
+                delivered = true;
+            } catch(e) {}
+
+            // Update status
+            if (statusEl) {
+                statusEl.textContent = delivered
+                    ? '✅ Delivered to Mnemosync HUD — speaking aloud now'
+                    : '⚠️ Sent via socket — awaiting HUD confirmation';
+                statusEl.style.color = delivered ? '#34d399' : '#fbbf24';
+                // Reset after 4s
+                setTimeout(() => {
+                    if (statusEl) {
+                        statusEl.textContent = 'Speaker Ready';
+                        statusEl.style.color = '#34d399';
+                    }
+                }, 4000);
+            }
+
+            // Also log to voice log
+            const logBox = document.getElementById('voiceLogContainer');
+            if (logBox) {
+                const now = new Date().toLocaleTimeString();
+                const item = document.createElement('div');
+                item.style.color = '#38bdf8';
+                item.innerHTML = `<span style="font-weight: bold;">[${now}]</span> 📢 <strong>Ananya (Emergency):</strong> "${text}"`;
+                logBox.prepend(item);
+            }
+
+            // Show patient reply box as pending
+            const replyBox = document.getElementById('modalReplyBox');
+            const replyContent = document.getElementById('modalReplyContent');
+            if (replyBox && replyContent) {
+                replyBox.style.display = 'block';
+                replyContent.innerHTML = '<em style="color:#fbbf24;">⏳ Waiting for Mnemosync HUD to confirm spoken aloud…</em>';
+            }
+        }
+
         let isPTT = false;
         function startPTT() {
             isPTT = true;
