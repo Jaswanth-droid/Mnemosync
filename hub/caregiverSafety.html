@@ -739,6 +739,11 @@
 
 
     <script>
+        let socket = null;
+        try {
+            socket = typeof io !== 'undefined' ? io() : null;
+        } catch(e) {}
+
         const presetMessages = [
             "Sunita, you are on your morning walk on 14th Cross. The blue bakery is to your left. Turn around and walk 50 meters back to our gate, I am waiting for you.",
             "Mom, please stay right where you are on the sidewalk. You are safe. I have your location and I am stepping outside right now to walk with you.",
@@ -1141,71 +1146,80 @@
                 });
         }
 
-        const socket = io();
-        socket.on('connect', () => {
-            console.log('[Safety Portal] Connected to Hub via WebSocket');
-            const badge = document.getElementById('hubConnBadge');
-            const txt = document.getElementById('hubConnText');
-            if (badge && txt) {
-                badge.style.background = 'rgba(34,197,94,0.15)';
-                badge.style.color = '#4ade80';
-                badge.style.borderColor = 'rgba(34,197,94,0.3)';
-                txt.textContent = 'HUD Link Active (Port 5173)';
-            }
-        });
+        if (socket) {
+            socket.on('connect', () => {
+                console.log('[Safety Portal] Connected to Hub via WebSocket');
+                const badge = document.getElementById('hubConnBadge');
+                const txt = document.getElementById('hubConnText');
+                if (badge && txt) {
+                    badge.style.background = 'rgba(34,197,94,0.15)';
+                    badge.style.color = '#4ade80';
+                    badge.style.borderColor = 'rgba(34,197,94,0.3)';
+                    txt.textContent = 'HUD Link Active (Port 5173)';
+                }
+            });
+        }
 
-        socket.on('disconnect', () => {
-            const badge = document.getElementById('hubConnBadge');
-            const txt = document.getElementById('hubConnText');
-            if (badge && txt) {
-                badge.style.background = 'rgba(239,68,68,0.15)';
-                badge.style.color = '#f87171';
-                txt.textContent = 'HUD Link Reconnecting...';
-            }
-        });
+        if (socket) {
+            socket.on('disconnect', () => {
+                const badge = document.getElementById('hubConnBadge');
+                const txt = document.getElementById('hubConnText');
+                if (badge && txt) {
+                    badge.style.background = 'rgba(239,68,68,0.15)';
+                    badge.style.color = '#f87171';
+                    txt.textContent = 'HUD Link Reconnecting...';
+                }
+            });
 
-        socket.on('patient_assist_request', (data) => {
-            console.log('[Safety Portal] Received real-time patient assist request:', data);
-            playAlertChime();
-            const inc = document.getElementById('incidentCard');
-            if (inc) inc.style.display = 'block';
+            socket.on('patient_assist_request', (data) => {
+                console.log('[Safety Portal] Received real-time patient assist request:', data);
+                playAlertChime();
+                const inc = document.getElementById('incidentCard');
+                if (inc) inc.style.display = 'block';
 
-            if (data.trigger === 'voice') {
-                document.getElementById('incidentTitle').textContent = 'VOICE QUERY: WALK DISORIENTATION';
-                document.getElementById('triggerSourceText').textContent = 'Spoken Voice Query (Speech Recognition)';
-            } else {
-                document.getElementById('incidentTitle').textContent = 'PATIENT WALK DISORIENTATION ALERT';
-                document.getElementById('triggerSourceText').textContent = 'Touch Button: "I Forgot Where To Go"';
-            }
+                if (data.trigger === 'voice') {
+                    document.getElementById('incidentTitle').textContent = 'VOICE QUERY: WALK DISORIENTATION';
+                    document.getElementById('triggerSourceText').textContent = 'Spoken Voice Query (Speech Recognition)';
+                } else {
+                    document.getElementById('incidentTitle').textContent = 'PATIENT WALK DISORIENTATION ALERT';
+                    document.getElementById('triggerSourceText').textContent = 'Touch Button: "I Forgot Where To Go"';
+                }
 
-            if (data.transcript) {
-                document.getElementById('patientSpeechQuoteBox').innerHTML = '🗣️ <em>"' + data.transcript + '"</em>';
-            }
-            if (data.location) {
-                document.getElementById('incidentLocationText').textContent = data.location;
-                document.getElementById('locStatusText').textContent = '🚨 ' + data.location;
-            }
+                if (data.transcript) {
+                    document.getElementById('patientSpeechQuoteBox').innerHTML = '🗣️ <em>"' + data.transcript + '"</em>';
+                }
+                if (data.location) {
+                    document.getElementById('incidentLocationText').textContent = data.location;
+                    document.getElementById('locStatusText').textContent = '🚨 ' + data.location;
+                }
 
-            const logBox = document.getElementById('voiceLogContainer');
-            if (logBox) {
-                const now = data.timestamp || new Date().toLocaleTimeString();
-                const item = document.createElement('div');
-                item.style.color = '#f87171';
-                item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> 🚨 <strong>Real Patient Alert:</strong> ' + (data.transcript || 'Patient requested walk assistance.');
-                logBox.prepend(item);
-            }
-        });
+                const logBox = document.getElementById('voiceLogContainer');
+                if (logBox) {
+                    const now = data.timestamp || new Date().toLocaleTimeString();
+                    const item = document.createElement('div');
+                    item.style.color = '#f87171';
+                    item.innerHTML = '<span style="font-weight: bold;">[' + now + ']</span> 🚨 <strong>Real Patient Alert:</strong> ' + (data.transcript || 'Patient requested walk assistance.');
+                    logBox.prepend(item);
+                }
+            });
 
-        socket.on('patient_distress_signal', (data) => {
-            console.log('[Safety Portal] 🚨🚨 URGENT DISTRESS SIGNAL RECEIVED:', data);
-            openDistressModal(data);
-        });
+            socket.on('patient_distress_signal', (data) => {
+                console.log('[Safety Portal] 🚨🚨 URGENT DISTRESS SIGNAL RECEIVED:', data);
+                openDistressModal(data);
+            });
 
-        socket.on('patient_camera_frame', (data) => {
-            if (data && data.frame) {
-                updateCameraFrame(data.frame);
-            }
-        });
+            socket.on('patient_camera_frame', (data) => {
+                if (data && data.frame) {
+                    updateCameraFrame(data.frame);
+                }
+            });
+
+            socket.on('patient_reply_to_caregiver', handlePatientReply);
+
+            socket.on('distress_resolved', () => {
+                closeDistressModal();
+            });
+        }
 
         function handlePatientReply(data) {
             console.log('[Safety Portal] 💬 Patient AI replied:', data);
@@ -1227,12 +1241,6 @@
                 logBox.prepend(item);
             }
         }
-
-        socket.on('patient_reply_to_caregiver', handlePatientReply);
-
-        socket.on('distress_resolved', () => {
-            closeDistressModal();
-        });
 
         // Periodic Fallback Polling every 2s for active distress state
         async function checkDistressPolling() {

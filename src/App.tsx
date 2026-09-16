@@ -165,6 +165,9 @@ function App() {
     const [activeView, setActiveView] = useState<ActiveViewType>('vision');
     const [showMedicationModal, setShowMedicationModal] = useState(false);
 
+    const webcamRef = useRef<Webcam>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
     // Voice/face recognition -> "Who is this?" recall card + familiar-voice greeting
     const [recognizedPerson, setRecognizedPerson] = useState<RecognizedPerson | null>(null);
     const [greetingPerson, setGreetingPerson] = useState<{ name: string; relation: string } | null>(null);
@@ -363,9 +366,6 @@ function App() {
             });
         }
     }, [identifiedPerson]);
-
-    const webcamRef = useRef<Webcam>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Save API key to localStorage
     useEffect(() => {
