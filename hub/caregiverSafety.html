@@ -207,14 +207,14 @@
             border: 2px solid #ef4444;
             border-radius: 20px;
             width: 100%;
-            max-width: 1140px;
-            max-height: 94vh;
+            max-width: 1200px;
+            max-height: 96vh;
             overflow-y: auto;
-            box-shadow: 0 0 60px rgba(239, 68, 68, 0.5), 0 30px 60px rgba(0, 0, 0, 0.95);
-            padding: 26px 30px;
+            box-shadow: 0 0 80px rgba(239, 68, 68, 0.5), 0 30px 60px rgba(0, 0, 0, 0.95);
+            padding: 22px 26px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 18px;
             animation: danger-pulse 2.5s infinite;
         }
         .camera-feed-box {
@@ -489,159 +489,121 @@
         </div>
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- 🚨 EMERGENCY DISTRESS POP-UP MODAL WITH LIVE USER AI CAMERA & PAST EVENTS  -->
-    <!-- ========================================================================= -->
+    <!-- ========================================================== -->
+    <!-- 🚨 EMERGENCY DISTRESS POPUP — LIVE CAMERA HERO + VOICE      -->
+    <!-- ========================================================== -->
     <div id="distressPopupModal">
         <div class="distress-modal-card">
-            <!-- Modal Header -->
-            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(239,68,68,0.4); padding-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+
+            <!-- ── Modal Header ── -->
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(239,68,68,0.35); padding-bottom: 14px; flex-wrap: wrap; gap: 10px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 44px; height: 44px; border-radius: 12px; background: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 0 20px rgba(239,68,68,0.7); animation: pulse 1s infinite;">
-                        🚨
-                    </div>
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 18px rgba(239,68,68,0.7); animation: pulse 1s infinite;">🚨</div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <h2 style="font-size: 20px; font-weight: 800; color: #fee2e2; letter-spacing: -0.02em;">
-                                URGENT PATIENT DISTRESS SIGNAL ACTIVE
-                            </h2>
-                            <span style="background: rgba(239,68,68,0.3); border: 1px solid #ef4444; color: #fca5a5; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 800;">
-                                CRITICAL HUD ALERT
-                            </span>
+                            <h2 style="font-size: 18px; font-weight: 800; color: #fee2e2; letter-spacing: -0.02em;">URGENT PATIENT DISTRESS SIGNAL ACTIVE</h2>
+                            <span style="background: rgba(239,68,68,0.3); border: 1px solid #ef4444; color: #fca5a5; font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 800; white-space: nowrap;">CRITICAL HUD ALERT</span>
                         </div>
-                        <p style="font-size: 12px; color: #cbd5e1; margin-top: 3px;">
+                        <p style="font-size: 12px; color: #cbd5e1; margin-top: 2px;">
                             Transmitted immediately from Patient AI HUD (<span id="modalTimestampText">Just Now</span>) • Location: <strong style="color: #38bdf8;" id="modalLocationText">Living Room (Front Chair)</strong>
                         </p>
                     </div>
                 </div>
-
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <button onclick="resolveDistressSignal()" style="background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; padding: 9px 16px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
-                        <span>✓</span> Acknowledge & Resolve
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                    <button onclick="resolveDistressSignal()" style="background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+                        <span>✓</span> Acknowledge &amp; Resolve
                     </button>
-                    <button onclick="closeDistressModal()" style="background: rgba(255,255,255,0.1); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;" title="Minimize modal while keeping monitoring active">
+                    <button onclick="closeDistressModal()" style="background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.18); padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">
                         ✕ Minimize
                     </button>
                 </div>
             </div>
 
-            <!-- Modal Content: 2-Column Split View -->
-            <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 22px;">
-                <!-- Left: Live User AI Camera Feed & Real-time Two-Way Voice -->
-                <div style="display: flex; flex-direction: column; gap: 14px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 style="font-size: 15px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
-                            <span>📹</span> Live Patient AI Camera Feed
-                        </h3>
-                        <span style="font-size: 11px; color: #94a3b8;" id="cameraFrameTime">
-                            Live Stream (Port 5173 HUD Vision)
-                        </span>
-                    </div>
+            <!-- ── HERO: Full-Width Live Camera Feed ── -->
+            <div style="position: relative; width: 100%; height: 460px; background: #000; border: 2px solid rgba(239,68,68,0.65); border-radius: 14px; overflow: hidden; box-shadow: 0 0 40px rgba(239,68,68,0.3), inset 0 0 30px rgba(0,0,0,0.7);">
+                <!-- LIVE badge -->
+                <div style="position: absolute; top: 12px; left: 12px; z-index: 20; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); border: 1px solid rgba(239,68,68,0.6); color: #fca5a5; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span style="width: 7px; height: 7px; border-radius: 50%; background: #ef4444; display: inline-block; animation: pulse 1s infinite;"></span>
+                    LIVE USER AI CAMERA (PORT 5173)
+                </div>
+                <!-- Timestamp badge top-right -->
+                <div style="position: absolute; top: 12px; right: 12px; z-index: 20; background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); color: #94a3b8; font-size: 11px; padding: 3px 10px; border-radius: 6px;" id="cameraFrameTime">Connecting…</div>
 
-                    <!-- Video / Frame Container -->
-                    <div class="camera-feed-box" id="cameraFeedBox">
-                        <div class="camera-overlay-badge">
-                            <span class="camera-live-dot"></span>
-                            <span>LIVE USER CAMERA (PORT 5173)</span>
-                        </div>
+                <!-- Actual camera image — fills entire box -->
+                <img id="modalCameraFeed" src="" alt="Live patient camera" style="width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; inset: 0;" />
 
-                        <!-- Live Camera Image from Patient HUD -->
-                        <img id="modalCameraFeed" src="" alt="User AI Camera Feed" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
-
-                        <!-- Fallback / Simulation Graphic when HUD camera is loading or denied -->
-                        <div id="cameraFallbackView" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; text-align: center; color: #94a3b8;">
-                            <div style="width: 70px; height: 70px; border-radius: 50%; background: rgba(239,68,68,0.15); border: 2px dashed rgba(239,68,68,0.5); display: flex; align-items: center; justify-content: center; font-size: 32px;">
-                                📷
-                            </div>
-                            <div>
-                                <div style="font-size: 14px; font-weight: 700; color: #e2e8f0;">Live AI Video Connection Active</div>
-                                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Webcam frames from patient HUD stream here automatically every 1.5s</div>
-                            </div>
-                        </div>
-
-                        <!-- HUD Telemetry Overlay on Bottom of Video -->
-                        <div style="position: absolute; bottom: 0; inset-inline: 0; background: linear-gradient(to top, rgba(0,0,0,0.85), transparent); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
-                            <span style="color: #4ade80; font-weight: 700;">🟢 HUD Vision Sync: Active</span>
-                            <span style="color: #cbd5e1;" id="cameraFpsText">FPS: 1.0 (Low-Bandwidth Telemetry)</span>
-                        </div>
-                    </div>
-
-                    <!-- Direct Voice Assistance Console Inside Modal -->
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
-                        <div style="font-size: 12px; font-weight: 700; color: #cbd5e1; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-                            <span>🎙️ Speak Reassurance Directly to Patient Speaker:</span>
-                            <span id="modalVoiceStatus" style="font-size: 11px; color: #34d399;">Speaker Ready</span>
-                        </div>
-
-                        <!-- 1-Click Reassurance Buttons -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-                            <button onclick="sendVoiceAssist('Sunita, I am looking through your AI camera right now. You are safe. Sit still, I am right here.', 'Visual Reassurance')" 
-                                    style="background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); color: #bae6fd; font-size: 11px; font-weight: 700; padding: 8px; border-radius: 6px; cursor: pointer; text-align: left;">
-                                💬 "I can see you. You are safe. Stay still."
-                            </button>
-                            <button onclick="sendVoiceAssist('Mom, take three deep breaths. I see you in the living room. Stay seated, I am coming right to you.', 'Calming Breath')" 
-                                    style="background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3); color: #e9d5ff; font-size: 11px; font-weight: 700; padding: 8px; border-radius: 6px; cursor: pointer; text-align: left;">
-                                💬 "Take deep breaths. I am walking to you."
-                            </button>
-                        </div>
-
-                        <!-- Custom Voice Input inside Modal -->
-                        <div style="display: flex; gap: 8px;">
-                            <input type="text" id="modalVoiceInput" 
-                                   value="Sunita, this is Ananya. I can see you on your camera. Everything is okay, do not panic."
-                                   style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 8px 12px; color: white; font-size: 12px; outline: none;"
-                                   onkeydown="if(event.key === 'Enter') sendModalCustomVoice()">
-                            <button onclick="sendModalCustomVoice()" style="background: linear-gradient(135deg, #0284c7, #6366f1); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;">
-                                📢 Speak
-                            </button>
-                        </div>
-
-                        <!-- Real-Time Patient AI Reply Container -->
-                        <div id="modalReplyBox" style="display: none; margin-top: 10px; background: rgba(34, 197, 94, 0.15); border: 1.5px solid rgba(34, 197, 94, 0.4); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #86efac;">
-                            <div style="font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-                                <span>💬</span> Mnemosync Original Module Replied:
-                            </div>
-                            <div id="modalReplyContent" style="font-size: 12px; color: #f0fdf4;">
-                                Patient received & heard guidance aloud.
-                            </div>
-                        </div>
-
+                <!-- Placeholder shown while no frame -->
+                <div id="cameraFallbackView" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: #94a3b8;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(239,68,68,0.12); border: 2px dashed rgba(239,68,68,0.45); display: flex; align-items: center; justify-content: center; font-size: 36px;">📷</div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 15px; font-weight: 700; color: #e2e8f0;">Connecting to Patient Live Camera…</div>
+                        <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Webcam frames stream automatically from the Mnemosync HUD</div>
                     </div>
                 </div>
 
-                <!-- Right: Significant Past Events & User Activities -->
-                <div style="display: flex; flex-direction: column; gap: 14px;">
-                    <div>
-                        <h3 style="font-size: 15px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; justify-content: space-between;">
-                            <span style="display: flex; align-items: center; gap: 8px;">
-                                <span>📜</span> Significant Past Events & Daily Activities
-                            </span>
-                            <span style="font-size: 11px; background: rgba(56,189,248,0.15); color: #38bdf8; padding: 2px 7px; border-radius: 999px;">
-                                User AI Memory
-                            </span>
-                        </h3>
-                        <p style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
-                            Recent tasks, medication, family conversations, and therapy completed prior to distress signal.
-                        </p>
-                    </div>
+                <!-- Bottom telemetry bar -->
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; background: linear-gradient(to top, rgba(0,0,0,0.88), transparent); padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                    <span style="color: #4ade80; font-weight: 700;">🟢 HUD Vision Sync: Active</span>
+                    <span style="color: #fca5a5; font-weight: 700;" id="modalVitalsText">💓 108 BPM (Elevated)</span>
+                    <span style="color: #cbd5e1;" id="cameraFpsText">FPS: ~1.0 (Telemetry)</span>
+                </div>
+            </div>
 
-                    <!-- Dynamic Activities List -->
-                    <div id="modalActivitiesList" style="display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
+            <!-- ── Bottom Row: Voice Console + Activities side by side ── -->
+            <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px;">
+
+                <!-- Voice Console -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+                    <div style="font-size: 13px; font-weight: 700; color: #cbd5e1; display: flex; align-items: center; justify-content: space-between;">
+                        <span>🎙️ Speak Reassurance Directly to Patient:</span>
+                        <span id="modalVoiceStatus" style="font-size: 11px; color: #34d399;">Speaker Ready</span>
+                    </div>
+                    <!-- Quick buttons -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px;">
+                        <button onclick="sendVoiceAssist('Sunita, I am looking through your AI camera right now. You are safe. Sit still, I am right here.', 'Visual Reassurance')"
+                                style="background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3); color: #bae6fd; font-size: 11px; font-weight: 700; padding: 8px; border-radius: 6px; cursor: pointer; text-align: left;">
+                            💬 "I can see you. Stay still."
+                        </button>
+                        <button onclick="sendVoiceAssist('Mom, take three deep breaths. I see you in the living room. Stay seated, I am coming right to you.', 'Calming Breath')"
+                                style="background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); color: #e9d5ff; font-size: 11px; font-weight: 700; padding: 8px; border-radius: 6px; cursor: pointer; text-align: left;">
+                            💬 "Deep breaths. I'm coming."
+                        </button>
+                    </div>
+                    <!-- Custom input -->
+                    <div style="display: flex; gap: 7px;">
+                        <input type="text" id="modalVoiceInput"
+                               value="Sunita, this is Ananya. I can see you on your camera. Everything is okay, do not panic."
+                               style="flex: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; padding: 8px 12px; color: white; font-size: 12px; outline: none;"
+                               onkeydown="if(event.key === 'Enter') sendModalCustomVoice()">
+                        <button onclick="sendModalCustomVoice()" style="background: linear-gradient(135deg, #0284c7, #6366f1); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap;">
+                            📢 Speak
+                        </button>
+                    </div>
+                    <!-- Patient reply -->
+                    <div id="modalReplyBox" style="display: none; background: rgba(34,197,94,0.12); border: 1.5px solid rgba(34,197,94,0.35); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #86efac;">
+                        <div style="font-weight: 800; margin-bottom: 2px;">💬 Mnemosync Original Module Replied:</div>
+                        <div id="modalReplyContent" style="color: #f0fdf4;">Patient received &amp; heard guidance aloud.</div>
+                    </div>
+                </div>
+
+                <!-- Significant Past Events -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <h3 style="font-size: 13px; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
+                            <span>📜</span> Significant Past Events
+                        </h3>
+                        <span style="font-size: 10px; background: rgba(56,189,248,0.15); color: #38bdf8; padding: 2px 7px; border-radius: 999px;">User AI Memory</span>
+                    </div>
+                    <p style="font-size: 11px; color: #64748b;">Recent tasks &amp; therapy completed prior to distress signal.</p>
+                    <div id="modalActivitiesList" style="display: flex; flex-direction: column; gap: 7px; max-height: 200px; overflow-y: auto; padding-right: 2px;">
                         <!-- Injected via JavaScript -->
                     </div>
-
-                    <!-- Patient Vitals & Safety Status Summary -->
-                    <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div>
-                            <span style="color: #94a3b8;">Heart Rate & Agitation:</span><br>
-                            <strong style="color: #f87171;" id="modalVitalsText">💓 108 BPM (Elevated)</strong>
-                        </div>
-                        <div>
-                            <span style="color: #94a3b8;">Primary Caregiver:</span><br>
-                            <strong style="color: #cbd5e1;">Ananya Sharma (On Call)</strong>
-                        </div>
+                    <!-- Vitals row -->
+                    <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 10px 12px; font-size: 12px; display: flex; gap: 16px; margin-top: auto;">
+                        <div><span style="color: #94a3b8;">Caregiver:</span><br><strong style="color: #cbd5e1;">Ananya Sharma (On Call)</strong></div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
