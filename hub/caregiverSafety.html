@@ -104,12 +104,9 @@
         }
 
         .grid {
-            display: grid;
-            grid-template-columns: 1.15fr 0.85fr;
+            display: flex;
+            flex-direction: column;
             gap: 24px;
-        }
-        @media (max-width: 1100px) {
-            .grid { grid-template-columns: 1fr; }
         }
 
         .card {
@@ -471,68 +468,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div>
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">
-                        <span>📡</span> Outdoor Geofence Radar & Walk Path
-                    </h2>
-                    <span id="radarDistanceText" style="font-size: 12px; color: #f87171; font-weight: 700;">
-                        72m Outside Perimeter
-                    </span>
-                </div>
-
-                <div style="position: relative; width: 100%; height: 260px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                    <svg width="100%" height="100%" viewBox="0 0 300 240" style="overflow: visible;">
-                        <circle cx="150" cy="120" r="100" fill="none" stroke="rgba(239,68,68,0.3)" stroke-width="1.5" stroke-dasharray="4,4" />
-                        <circle cx="150" cy="120" r="65" fill="none" stroke="rgba(245,158,11,0.35)" stroke-width="1.5" />
-                        <circle cx="150" cy="120" r="35" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.5)" stroke-width="2" />
-
-                        <line x1="150" y1="10" x2="150" y2="230" stroke="rgba(255,255,255,0.07)" stroke-width="1" />
-                        <line x1="30" y1="120" x2="270" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="1" />
-
-                        <text x="154" y="105" fill="#34d399" font-size="9" font-weight="700">HOME SAFE (0-25m)</text>
-                        <text x="154" y="70" fill="#fbbf24" font-size="9" font-weight="700">SIDEWALK (50m)</text>
-                        <text x="154" y="32" fill="#f87171" font-size="9" font-weight="700">14TH CROSS HAZARD (>50m)</text>
-
-                        <circle cx="150" cy="120" r="6" fill="#10b981" />
-                        <text x="158" y="124" fill="#6ee7b7" font-size="10" font-weight="bold">🏠 Home (Porch)</text>
-
-                        <circle cx="175" cy="100" r="4" fill="#fbbf24" />
-                        <text x="182" y="103" fill="#fde68a" font-size="9">🚪 Front Gate</text>
-
-                        <circle cx="210" cy="65" r="4" fill="#a855f7" />
-                        <text x="216" y="68" fill="#d8b4fe" font-size="9">🏪 Bakery</text>
-
-                        <path id="walkPathLine" d="M 150 120 L 175 100 L 210 65 L 225 45" fill="none" stroke="rgba(244,63,94,0.6)" stroke-width="2.5" stroke-dasharray="3,3" />
-
-                        <g id="patientBlip" transform="translate(225, 45)">
-                            <circle cx="0" cy="0" r="16" fill="rgba(239,68,68,0.25)">
-                                <animate attributeName="r" values="8;20;8" dur="1.8s" repeatCount="indefinite" />
-                                <animate attributeName="opacity" values="0.8;0;0.8" dur="1.8s" repeatCount="indefinite" />
-                            </circle>
-                            <circle cx="0" cy="0" r="7" fill="#ef4444" stroke="#ffffff" stroke-width="2" />
-                            <text x="10" y="4" fill="#ffffff" font-size="10" font-weight="800" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.8))">Sunita (Here)</text>
-                        </g>
-
-                        <line id="returnArrow" x1="225" y1="45" x2="165" y2="108" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,2" />
-                    </svg>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; font-size: 12px;">
-                    <div style="background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 8px;">
-                        <span style="color: #94a3b8;">Displacement:</span><br>
-                        <strong style="color: #f87171;" id="dispText">72m North-East</strong>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 8px;">
-                        <span style="color: #94a3b8;">Pacing Cadence:</span><br>
-                        <strong style="color: #fbbf24;" id="speedCadenceText">Stationary (Paused 90s)</strong>
-                    </div>
-                </div>
-            </div>
-
 
             <!-- Significant Past Events & Daily Activities Card -->
             <div class="card">

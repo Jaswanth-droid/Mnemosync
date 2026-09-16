@@ -250,9 +250,14 @@ function App() {
         // Start live camera streaming to Caregiver every 1.5s
         if (cameraStreamIntervalRef.current) clearInterval(cameraStreamIntervalRef.current);
         cameraStreamIntervalRef.current = setInterval(() => {
-            const liveFrame = webcamRef.current?.getScreenshot() || null;
-            if (liveFrame) {
-                emitPatientCameraFrame(liveFrame);
+            if (webcamRef.current) {
+                const video = (webcamRef.current as any).video as HTMLVideoElement | null;
+                if (video && video.readyState >= 3 && video.videoWidth > 0) {
+                    const liveFrame = webcamRef.current.getScreenshot();
+                    if (liveFrame && liveFrame.length > 1000 && liveFrame !== 'data:,') {
+                        emitPatientCameraFrame(liveFrame);
+                    }
+                }
             }
         }, 1500);
 
@@ -340,9 +345,14 @@ function App() {
         // Periodically emit webcam frames every 2.5s so caregiver portal always has fresh camera frames
         const frameInterval = setInterval(() => {
             if (webcamRef.current) {
-                const frame = webcamRef.current.getScreenshot();
-                if (frame) {
-                    emitPatientCameraFrame(frame);
+                const video = (webcamRef.current as any).video as HTMLVideoElement | null;
+                // Only capture when video is actually playing real frames
+                if (video && video.readyState >= 3 && video.videoWidth > 0) {
+                    const frame = webcamRef.current.getScreenshot();
+                    // Reject empty data URLs (data:, or very short strings)
+                    if (frame && frame.length > 1000 && frame !== 'data:,') {
+                        emitPatientCameraFrame(frame);
+                    }
                 }
             }
         }, 2500);
