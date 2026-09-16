@@ -340,6 +340,28 @@ app.get('/api/patient/distress-status', (_req, res) => {
 app.post('/api/patient/resolve-distress', (_req, res) => {
     activeDistressState = null;
     if (io) io.emit('distress_resolved', { timestamp: new Date().toLocaleTimeString() });
+    try {
+        const postData = JSON.stringify({ timestamp: new Date().toLocaleTimeString() });
+        const request = http.request({
+            hostname: 'localhost',
+            port: 5000,
+            path: '/api/patient/resolve-distress-internal',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        });
+        request.on('error', () => {});
+        request.write(postData);
+        request.end();
+    } catch (e) {}
+    res.json({ success: true });
+});
+
+app.post('/api/patient/resolve-distress-internal', (_req, res) => {
+    activeDistressState = null;
+    if (io) io.emit('distress_resolved', { timestamp: new Date().toLocaleTimeString() });
     res.json({ success: true });
 });
 
@@ -397,6 +419,13 @@ io.on('connection', (socket) => {
     socket.on('patient_reply_to_caregiver', (data) => {
         console.log('[Caretaker Socket] Relaying patient_reply_to_caregiver:', data);
         io.emit('patient_reply_to_caregiver', data);
+    });
+    socket.on('distress_resolved', (data) => {
+        activeDistressState = null;
+        io.emit('distress_resolved', data);
+    });
+    socket.on('request_camera_stream', () => {
+        io.emit('request_camera_stream');
     });
 });
 

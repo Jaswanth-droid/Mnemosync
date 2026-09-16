@@ -410,6 +410,32 @@ app.post('/api/patient/reply-caregiver', (req, res) => {
     res.json({ success: true });
 });
 
+app.post('/api/patient/resolve-distress', (_req, res) => {
+    if (io) io.emit('distress_resolved', { timestamp: new Date().toLocaleTimeString() });
+    try {
+        const postData = JSON.stringify({ timestamp: new Date().toLocaleTimeString() });
+        const request = http.request({
+            hostname: 'localhost',
+            port: 5174,
+            path: '/api/patient/resolve-distress-internal',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        });
+        request.on('error', () => {});
+        request.write(postData);
+        request.end();
+    } catch (e) {}
+    res.json({ success: true });
+});
+
+app.post('/api/patient/resolve-distress-internal', (_req, res) => {
+    if (io) io.emit('distress_resolved', { timestamp: new Date().toLocaleTimeString() });
+    res.json({ success: true });
+});
+
 app.post('/api/patient/camera-frame', (req, res) => {
     const { frame } = req.body;
     if (frame) {

@@ -331,7 +331,7 @@
             <div id="vitalsBadge" style="background: rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 8px; font-size: 12px; border: 1px solid rgba(255,255,255,0.1); color: #34d399; font-weight: 700;">
                 💓 74 BPM (Resting / Normal)
             </div>
-            <button onclick="simulateUserDistressSignal()" style="background: linear-gradient(135deg, #0284c7, #6366f1); color: white; border: none; padding: 7px 16px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(2,132,199,0.35);">
+            <button onclick="openLiveCameraModal()" style="background: linear-gradient(135deg, #0284c7, #6366f1); color: white; border: none; padding: 7px 16px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(2,132,199,0.35);">
                 📹 Access Live User AI Camera & Intercom
             </button>
         </div>
@@ -1059,6 +1059,10 @@
 
         function resolveDistressSignal() {
             sendVoiceAssist("Sunita, your distress signal is acknowledged. Help is with you now.", "Emergency Resolution");
+            fetch('/api/patient/resolve-distress', { method: 'POST' }).catch(() => {});
+            if (typeof socket !== 'undefined' && socket) {
+                socket.emit('distress_resolved', { timestamp: new Date().toLocaleTimeString() });
+            }
             closeDistressModal();
 
             const logBox = document.getElementById('voiceLogContainer');
@@ -1071,97 +1075,70 @@
             }
         }
 
-        function updateCameraFrame(frameBase64) {
-            const img = document.getElementById('modalCameraFeed');
-            const fallback = document.getElementById('cameraFallbackView');
-            const timeSpan = document.getElementById('cameraFrameTime');
-
-            if (frameBase64 && img) {
-                img.src = frameBase64;
-                img.style.display = 'block';
-                if (fallback) fallback.style.display = 'none';
-                if (timeSpan) timeSpan.textContent = 'Live Frame Updated: ' + new Date().toLocaleTimeString();
+        function openLiveCameraModal() {
+            if (typeof socket !== 'undefined' && socket) {
+                socket.emit('request_camera_stream');
             }
-        }
-
-        function sendModalCustomVoice() {
-            const input = document.getElementById('modalVoiceInput');
-            if (!input || !input.value.trim()) return;
-            sendVoiceAssist(input.value.trim(), 'Emergency Caregiver Voice');
-            const status = document.getElementById('modalVoiceStatus');
-            if (status) {
-                status.textContent = 'Guidance sent to HUD speaker at ' + new Date().toLocaleTimeString();
-                status.style.color = '#34d399';
-            }
-        }
-
-        function playDistressSiren() {
-            if (chimeMuted) return;
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(450, ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(900, ctx.currentTime + 0.25);
-                osc.frequency.linearRampToValueAtTime(450, ctx.currentTime + 0.5);
-                gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.55);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.55);
-            } catch (e) {}
+            fetch('/api/patient/latest-camera')
+                .then(r => r.json())
+                .then(res => {
+                    openDistressModal({
+                        patientName: 'Mrs. Sunita Sharma',
+                        type: 'camera_access',
+                        trigger: 'caregiver_requested',
+                        message: 'Caregiver opened Live User AI Camera & Intercom Feed',
+                        location: 'Living Room (Front Chair, 14 Park Lane)',
+                        vitals: { heartRate: 74, stressLevel: 'Normal', agitation: 'Resting' },
+                        recentActivities: defaultUserActivities,
+                        cameraFrame: res.frame || null,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                }).catch(() => {
+                    openDistressModal({
+                        patientName: 'Mrs. Sunita Sharma',
+                        type: 'camera_access',
+                        trigger: 'caregiver_requested',
+                        message: 'Caregiver opened Live User AI Camera & Intercom Feed',
+                        location: 'Living Room (Front Chair, 14 Park Lane)',
+                        vitals: { heartRate: 74, stressLevel: 'Normal', agitation: 'Resting' },
+                        recentActivities: defaultUserActivities,
+                        cameraFrame: null,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                });
         }
 
         function simulateUserDistressSignal() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 640;
-            canvas.height = 480;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                const grad = ctx.createLinearGradient(0, 0, 640, 480);
-                grad.addColorStop(0, '#1e293b');
-                grad.addColorStop(1, '#0f172a');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, 640, 480);
-
-                ctx.fillStyle = '#334155';
-                ctx.fillRect(200, 240, 240, 180);
-                ctx.fillStyle = '#475569';
-                ctx.fillRect(240, 180, 160, 80);
-
-                ctx.strokeStyle = '#ef4444';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(180, 160, 280, 270);
-
-                ctx.fillStyle = '#ef4444';
-                ctx.fillRect(180, 130, 220, 28);
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 13px sans-serif';
-                ctx.fillText('Sunita Sharma (User) [98%]', 190, 150);
-
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.fillRect(10, 10, 240, 70);
-                ctx.fillStyle = '#4ade80';
-                ctx.font = '12px monospace';
-                ctx.fillText('Mnemosync AI Vision v2.4', 20, 30);
-                ctx.fillText('Posture: Seated Armchair', 20, 48);
-                ctx.fillText('Status: DISTRESS SIGNAL ACTIVE', 20, 66);
+            if (typeof socket !== 'undefined' && socket) {
+                socket.emit('request_camera_stream');
             }
-            const simFrame = canvas.toDataURL('image/jpeg', 0.85);
-
-            openDistressModal({
-                patientName: 'Mrs. Sunita Sharma',
-                type: 'distress_emergency',
-                trigger: 'distress_button',
-                message: 'Patient triggered Emergency Distress Signal on Mnemosync HUD',
-                location: 'Living Room (Front Armchair, 14 Park Lane)',
-                vitals: { heartRate: 108, stressLevel: 'Critical', agitation: 'High' },
-                recentActivities: defaultUserActivities,
-                cameraFrame: simFrame,
-                timestamp: new Date().toLocaleTimeString()
-            });
+            fetch('/api/patient/latest-camera')
+                .then(r => r.json())
+                .then(res => {
+                    openDistressModal({
+                        patientName: 'Mrs. Sunita Sharma',
+                        type: 'distress_emergency',
+                        trigger: 'distress_button',
+                        message: 'Patient triggered Emergency Distress Signal on Mnemosync HUD',
+                        location: 'Living Room (Front Armchair, 14 Park Lane)',
+                        vitals: { heartRate: 108, stressLevel: 'Critical', agitation: 'High' },
+                        recentActivities: defaultUserActivities,
+                        cameraFrame: res.frame || null,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                }).catch(() => {
+                    openDistressModal({
+                        patientName: 'Mrs. Sunita Sharma',
+                        type: 'distress_emergency',
+                        trigger: 'distress_button',
+                        message: 'Patient triggered Emergency Distress Signal on Mnemosync HUD',
+                        location: 'Living Room (Front Armchair, 14 Park Lane)',
+                        vitals: { heartRate: 108, stressLevel: 'Critical', agitation: 'High' },
+                        recentActivities: defaultUserActivities,
+                        cameraFrame: null,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                });
         }
 
         const socket = io();
