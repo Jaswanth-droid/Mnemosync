@@ -17,6 +17,47 @@ interface MemoryDashboardProps {
 
 type TabType = 'dates' | 'conversations' | 'people' | 'notes';
 
+// Helper to accurately classify speaker as User vs Visitor (WhatsApp-style left vs right)
+function isUserSpeaker(speaker?: string, text?: string, participants?: string[]): boolean {
+    const s = (speaker || '').toLowerCase().trim();
+    const t = (text || '').toLowerCase().trim();
+
+    // 1. Explicit user/self identities
+    if (['you', 'user', 'patient', 'me', 'self', 'owner', 'host', 'sunita', 'sunita sharma'].includes(s)) {
+        return true;
+    }
+
+    // 2. Explicit match against visitor participants (e.g. "Rakesh", "Arjun", "Priya")
+    if (participants && participants.length > 0) {
+        const matchesVisitor = participants.some(p => {
+            const pNorm = p.toLowerCase().trim();
+            return !['user', 'you', 'patient', 'sunita', 'sunita sharma', 'owner'].includes(pNorm) &&
+                   (s === pNorm || s.includes(pNorm) || (pNorm.length > 2 && s.startsWith(pNorm)));
+        });
+        if (matchesVisitor) {
+            return false;
+        }
+    }
+
+    if (['visitor', 'guest', 'doctor', 'nurse', 'caregiver', 'family'].includes(s)) {
+        return false;
+    }
+
+    // 3. Conversational linguistics based on message content
+    // User / host typical questions and polite responses (RIGHT SIDE):
+    if (/^(?:hi|hello|hey|good\s+morning|good\s+afternoon|good\s+evening)[,\s]*(?:what\s+(?:is\s+your\s+name|brings\s+you\s+here)|who\s+are\s+you|how\s+can\s+i\s+help|sure\s+i(?:'ll|\s+will)\s+be\s+there|sure[,\s!]|thank\s+you|welcome)/i.test(t) ||
+        /^(?:what\s+(?:is\s+your\s+name|brings\s+you\s+here)|who\s+are\s+you|how\s+are\s+you|how\s+can\s+i\s+help|sure\s+i(?:'ll|\s+will)\s+be\s+there|sure[,\s!]|thank\s+you|welcome)/i.test(t)) {
+        return true;
+    }
+
+    // Visitor typical responses / introductions / statements (LEFT SIDE):
+    if (/^(?:my\s+name\s+is|i\s+am\s+|i'm\s+|i\s+came\s+to|i\s+am\s+here\s+for|i'm\s+here\s+for|we\s+will\s+be\s+having|tomorrow\s+i\s+have|have\s+a\s+birthday|have\s+my\s+birthday|i\s+have\s+my|actually\s+i)/i.test(t)) {
+        return false;
+    }
+
+    return s.includes('you') || s.includes('user') || s.includes('patient');
+}
+
 export default function MemoryDashboard({ isOpen, onClose }: MemoryDashboardProps) {
     const [dates, setDates] = useState<ImportantDate[]>([]);
     const [conversations, setConversations] = useState<ConversationRecord[]>([]);
@@ -385,57 +426,115 @@ export default function MemoryDashboard({ isOpen, onClose }: MemoryDashboardProp
                     </div>
                 </div>
             ) : selectedConversation ? (
-                /* Chat View */
-                <div style={{ padding: '16px 32px', height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
+                /* Chat View (WhatsApp Style: Left for Visitor, Right for User) */
+                <div style={{ padding: '16px 32px', height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto', width: '100%' }}>
                     {(() => {
-                        const participantName = selectedConversation.participants[0] || 'Unknown';
-                        const participant = people.find(p => p.name.trim().toLowerCase() === participantName.trim().toLowerCase());
+                        const visitorName = selectedConversation.participants.find(p => !['user', 'you', 'patient', 'sunita', 'sunita sharma', 'owner'].includes(p.toLowerCase())) ||
+                            (selectedConversation.fullTranscript?.find(t => !isUserSpeaker(t.speaker, t.text, selectedConversation.participants))?.speaker) ||
+                            'Visitor';
+                        const participant = people.find(p => p.name.trim().toLowerCase() === visitorName.trim().toLowerCase());
+                        const initial = visitorName && visitorName !== 'Visitor' ? visitorName[0].toUpperCase() : 'V';
                         return (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                                <button onClick={() => setSelectedConversation(null)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px' }}>
-                                    <ArrowLeft size={20} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                <button onClick={() => setSelectedConversation(null)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50%', width: '40px', height: '40px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0' }}>
+                                    <ArrowLeft size={18} />
                                 </button>
                                 <div style={{
                                     width: '48px', height: '48px', borderRadius: '50%',
-                                    background: participant?.faceImage ? 'transparent' : 'linear-gradient(135deg, #ec4899, #8b5cf6)',
+                                    background: participant?.faceImage ? 'transparent' : 'linear-gradient(135deg, #059669, #10b981)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: 'white', fontWeight: 'bold', fontSize: '18px', overflow: 'hidden'
+                                    color: 'white', fontWeight: 'bold', fontSize: '18px', overflow: 'hidden',
+                                    border: '2px solid rgba(16, 185, 129, 0.4)'
                                 }}>
                                     {participant?.faceImage ? (
                                         <img src={participant.faceImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
-                                        participantName[0] || 'C'
+                                        initial
                                     )}
                                 </div>
-                                <div>
-                                    <h2 style={{ margin: 0, fontSize: '18px', color: 'white' }}>{participantName}</h2>
-                                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#9ca3af' }}>{selectedConversation.summary}</p>
+                                <div style={{ flex: 1 }}>
+                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'white' }}>{visitorName}</h2>
+                                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#9ca3af' }}>{selectedConversation.summary || `Conversation with ${visitorName}`}</p>
                                 </div>
                             </div>
                         );
                     })()}
 
-                    <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '16px' }}>
+                    <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px', padding: '12px 16px 32px 16px', background: 'radial-gradient(ellipse at center, rgba(16, 185, 129, 0.03) 0%, transparent 70%)', borderRadius: '16px' }}>
                         {selectedConversation.convoImage && (
-                            <div style={{ alignSelf: 'center', marginBottom: '16px', width: '100%', maxWidth: '600px' }}>
-                                <img src={selectedConversation.convoImage} alt="Scene capture" style={{ width: '100%', borderRadius: '16px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
-                                <p style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>Captured Scene</p>
+                            <div style={{ alignSelf: 'center', marginBottom: '12px', width: '100%', maxWidth: '560px', textAlign: 'center' }}>
+                                <img src={selectedConversation.convoImage} alt="Scene capture" style={{ width: '100%', borderRadius: '16px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }} />
+                                <p style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', marginTop: '6px' }}>Captured Scene</p>
                             </div>
                         )}
                         {selectedConversation.fullTranscript.map((entry, idx) => {
-                            const isUser = entry.speaker.toLowerCase() === 'you';
+                            const isUser = isUserSpeaker(entry.speaker, entry.text, selectedConversation.participants);
+                            const visitorName = selectedConversation.participants.find(p => !['user', 'you', 'patient', 'sunita', 'sunita sharma', 'owner'].includes(p.toLowerCase())) || 'Visitor';
+                            const displaySpeaker = isUser ? 'You' : (entry.speaker && !['user', 'you', 'visitor'].includes(entry.speaker.toLowerCase()) ? entry.speaker : visitorName);
+
                             return (
-                                <div key={idx} style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
-                                    <div style={{
-                                        maxWidth: '70%', padding: '12px 16px',
-                                        borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                                        background: isUser ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'rgba(255,255,255,0.1)',
-                                        color: 'white', fontSize: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
-                                    }}>
-                                        <p style={{ margin: 0, fontWeight: 500, lineHeight: '1.5' }}>{entry.text}</p>
-                                        <p style={{ margin: '6px 0 0 0', fontSize: '10px', color: isUser ? 'rgba(255,255,255,0.7)' : '#9ca3af', textAlign: isUser ? 'right' : 'left' }}>
-                                            {formatTimeAgo(new Date(entry.timestamp))}
+                                <div
+                                    key={idx}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: isUser ? 'flex-end' : 'flex-start',
+                                        width: '100%'
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            maxWidth: '75%',
+                                            minWidth: '140px',
+                                            padding: '10px 16px 8px 16px',
+                                            borderRadius: isUser ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+                                            background: isUser
+                                                ? 'linear-gradient(135deg, #005c4b 0%, #064e3b 100%)'
+                                                : '#202c33',
+                                            border: isUser
+                                                ? '1px solid rgba(16, 185, 129, 0.4)'
+                                                : '1px solid rgba(255, 255, 255, 0.08)',
+                                            boxShadow: isUser
+                                                ? '0 4px 14px rgba(5, 150, 105, 0.25)'
+                                                : '0 4px 14px rgba(0, 0, 0, 0.3)',
+                                            color: 'white',
+                                            fontSize: '14px',
+                                            position: 'relative'
+                                        }}
+                                    >
+                                        <div style={{
+                                            fontSize: '11px',
+                                            fontWeight: 'bold',
+                                            color: isUser ? '#6ee7b7' : '#53bdeb',
+                                            marginBottom: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}>
+                                            {!isUser && <span>~</span>}
+                                            <span>{displaySpeaker}</span>
+                                        </div>
+
+                                        <p style={{ margin: 0, fontWeight: 400, lineHeight: 1.5, color: '#e9edef', wordBreak: 'break-word' }}>
+                                            {entry.text}
                                         </p>
+
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'flex-end',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            marginTop: '4px'
+                                        }}>
+                                            <span style={{ fontSize: '10px', color: '#8696a0' }}>
+                                                {formatTimeAgo(new Date(entry.timestamp))}
+                                            </span>
+                                            {isUser && (
+                                                <span style={{ fontSize: '11px', color: '#53bdeb', fontWeight: 'bold', lineHeight: 1 }}>
+                                                    ✓✓
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );
