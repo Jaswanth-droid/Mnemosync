@@ -5,50 +5,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mnemosync OCR & Disease Progression Engine — Caretaker Portal</title>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #090d16;
-            color: #f1f5f9;
+            background: #f8fafc;
+            color: #0f172a;
             padding: 24px 32px;
             min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
         }
+        
+        /* Animated Aurora Background Mesh */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: 
+                radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(232, 121, 249, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 20% 80%, rgba(52, 211, 153, 0.08) 0%, transparent 40%);
+            z-index: -1;
+            animation: ambient-mesh 25s infinite linear;
+            pointer-events: none;
+        }
+        @keyframes ambient-mesh {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.05); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
         .header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
             margin-bottom: 24px;
         }
         .title {
             font-size: 26px;
             font-weight: 800;
-            background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
+            background: linear-gradient(135deg, #0284c7 0%, #4f46e5 50%, #db2777 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
         }
         .subtitle {
-            color: #94a3b8;
+            color: #64748b;
             font-size: 13px;
             margin-top: 4px;
+            font-weight: 500;
         }
         .badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 12px;
+            padding: 6px 14px;
             border-radius: 9999px;
             font-size: 12px;
             font-weight: 700;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            color: #334155;
+            backdrop-filter: blur(8px);
         }
         .badge-pulse {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #4ade80;
+            background: #10b981;
             animation: pulse 1.5s infinite;
         }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.3); } }
@@ -61,43 +89,59 @@
         @media (max-width: 1050px) { .grid { grid-template-columns: 1fr; } }
 
         .card {
-            background: rgba(18, 24, 38, 0.85);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 16px;
-            padding: 22px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(255,255,255,0.8);
+            border-top: 1px solid rgba(255,255,255,1);
+            border-left: 1px solid rgba(255,255,255,1);
+            border-radius: 32px;
+            padding: 32px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05), inset 0 1px 1px rgba(255,255,255,0.8);
+            margin-bottom: 24px;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.08), inset 0 1px 2px rgba(255,255,255,1);
+            border-color: rgba(255,255,255,0.9);
         }
         .card-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: 16px;
         }
         .card-title {
-            font-size: 17px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: 800;
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: #f8fafc;
+            gap: 10px;
+            color: #0f172a;
+            letter-spacing: 0.3px;
         }
         
         /* Drag & Drop Upload Zone */
         .dropzone {
-            border: 2px dashed rgba(129, 140, 248, 0.4);
-            border-radius: 12px;
+            border: 2px dashed rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
             padding: 28px 16px;
             text-align: center;
-            background: rgba(99, 102, 241, 0.04);
+            background: rgba(255, 255, 255, 0.6);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             margin-bottom: 16px;
+            color: #475569;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
         }
         .dropzone:hover, .dropzone.dragover {
-            border-color: #818cf8;
-            background: rgba(99, 102, 241, 0.1);
-            transform: scale(1.01);
+            border-color: #4f46e5;
+            background: rgba(255, 255, 255, 0.9);
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.1), inset 0 1px 2px rgba(255,255,255,1);
         }
         .dropzone-icon {
             font-size: 36px;
@@ -111,54 +155,66 @@
             flex-wrap: wrap;
         }
         .btn-preset {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #cbd5e1;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 11px;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-top: 1px solid rgba(255,255,255,1);
+            color: #475569;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 12px;
             cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
         }
         .btn-preset:hover {
-            background: rgba(129, 140, 248, 0.2);
-            border-color: #818cf8;
-            color: white;
+            background: rgba(255,255,255,0.95);
+            border-color: rgba(99, 102, 241, 0.3);
+            color: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
         }
 
         textarea {
             width: 100%;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 10px;
-            color: #f1f5f9;
-            padding: 12px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #0f172a;
+            border-radius: 12px;
+            padding: 14px;
             font-size: 13px;
             line-height: 1.5;
             font-family: monospace;
             resize: vertical;
             outline: none;
             margin-bottom: 14px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
         }
-        textarea:focus { border-color: #818cf8; box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.2); }
+        textarea:focus { 
+            border-color: rgba(14, 165, 233, 0.5); 
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15), inset 0 2px 4px rgba(0,0,0,0.02); 
+            background: #ffffff;
+        }
 
         .btn-primary {
             width: 100%;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+            background: linear-gradient(135deg, #0284c7, #4f46e5);
             color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 12px 18px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 999px;
+            padding: 14px 20px;
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 800;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 15px rgba(2,132,199,0.2);
         }
         .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(2,132,199, 0.3), inset 0 1px 1px rgba(255,255,255,0.4);
+            background: linear-gradient(135deg, #0369a1, #4338ca);
         }
 
         /* Results Display */
@@ -169,15 +225,18 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin-bottom: 18px;
-            border: 1px solid rgba(255,255,255,0.1);
+            padding: 18px 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(0,0,0,0.05);
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            backdrop-filter: blur(12px);
         }
-        .severity-High { background: linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(220,38,38,0.1) 100%); border-color: rgba(239,68,68,0.4); }
-        .severity-Moderate { background: linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(217,119,6,0.1) 100%); border-color: rgba(245,158,11,0.4); }
-        .severity-Mild { background: linear-gradient(135deg, rgba(34,197,94,0.2) 0%, rgba(16,185,129,0.1) 100%); border-color: rgba(34,197,94,0.4); }
-        .severity-Critical { background: linear-gradient(135deg, rgba(225,29,72,0.3) 0%, rgba(159,18,57,0.2) 100%); border-color: rgba(225,29,72,0.5); }
+        .severity-High { background: linear-gradient(135deg, rgba(254,226,226,0.9), rgba(255,255,255,0.85)); border-color: rgba(239,68,68,0.3); }
+        .severity-Moderate { background: linear-gradient(135deg, rgba(254,243,199,0.9), rgba(255,255,255,0.85)); border-color: rgba(245,158,11,0.3); }
+        .severity-Mild { background: linear-gradient(135deg, rgba(220,252,231,0.9), rgba(255,255,255,0.85)); border-color: rgba(34,197,94,0.3); }
+        .severity-Critical { background: linear-gradient(135deg, rgba(255,228,230,0.9), rgba(255,255,255,0.85)); border-color: rgba(225,29,72,0.3); }
 
         .timeline-table {
             width: 100%;
@@ -187,60 +246,69 @@
         }
         .timeline-table th {
             text-align: left;
-            padding: 10px 12px;
-            background: rgba(255,255,255,0.04);
-            color: #94a3b8;
-            font-weight: 600;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 14px;
+            background: rgba(0,0,0,0.02);
+            color: #64748b;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            border-radius: 8px 8px 0 0;
         }
         .timeline-table td {
-            padding: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            color: #e2e8f0;
+            padding: 14px;
+            border-bottom: 1px solid rgba(0,0,0,0.03);
+            color: #1e293b;
         }
 
         .score-pill {
             display: inline-block;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-weight: 800;
             font-size: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.02);
         }
-        .score-high { background: rgba(34,197,94,0.2); color: #4ade80; }
-        .score-mid { background: rgba(245,158,11,0.2); color: #fbbf24; }
-        .score-low { background: rgba(239,68,68,0.2); color: #f87171; }
+        .score-high { background: rgba(34,197,94,0.15); color: #059669; }
+        .score-mid { background: rgba(245,158,11,0.15); color: #d97706; }
+        .score-low { background: rgba(239,68,68,0.15); color: #dc2626; }
 
         .metric-box {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 14px;
-            margin-top: 12px;
+            background: rgba(255,255,255,0.6);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 16px;
+            padding: 18px;
+            margin-top: 16px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.01);
         }
         .plan-item {
             display: flex;
             align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 8px;
+            gap: 12px;
+            margin-bottom: 12px;
             font-size: 13px;
-            color: #cbd5e1;
-            line-height: 1.4;
+            color: #334155;
+            line-height: 1.5;
+            background: rgba(255,255,255,0.4);
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.03);
         }
-        .plan-dot { color: #818cf8; font-weight: bold; }
+        .plan-dot { color: #4f46e5; font-weight: 800; font-size: 14px; }
 
         .speed-gauge {
             width: 100%;
-            height: 10px;
-            background: rgba(255,255,255,0.1);
+            height: 12px;
+            background: rgba(0,0,0,0.05);
             border-radius: 999px;
             overflow: hidden;
-            margin-top: 8px;
+            margin-top: 10px;
+            box-shadow: inset 0 1px 4px rgba(0,0,0,0.05);
         }
         .speed-fill {
             height: 100%;
             background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
             border-radius: 999px;
-            transition: width 0.8s ease;
+            transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
     </style>
 </head>
@@ -251,15 +319,15 @@
             <p class="subtitle">Multi-Modal Alzheimer's Diagnostic Report Ingestion & Longitudinal Velocity Comparison</p>
         </div>
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <div style="display: flex; gap: 6px; background: rgba(255,255,255,0.06); padding: 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
-                <button id="tabBtnOCR" onclick="window.location.href='/'" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; color: white; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer;">
+            <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.04); padding: 4px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.05);">
+                <button id="tabBtnOCR" onclick="window.location.href='/'" style="background: linear-gradient(135deg, #0284c7, #4f46e5); border: none; color: white; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(2,132,199,0.2);">
                     📄 Clinical OCR & Progression
                 </button>
-                <button id="tabBtnCare" onclick="window.location.href='/safety'" style="background: transparent; border: none; color: #94a3b8; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#f8fafc'; this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.color='#94a3b8'; this.style.background='transparent'">
+                <button id="tabBtnCare" onclick="window.location.href='/safety'" style="background: transparent; border: none; color: #64748b; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#0f172a'; this.style.background='rgba(0,0,0,0.05)'" onmouseout="this.style.color='#64748b'; this.style.background='transparent'">
                     🛡️ Caregiver Live Monitor & Safety
                 </button>
             </div>
-            <span class="badge" style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3);">
+            <span class="badge" style="background: rgba(16,185,129,0.1); color: #047857; border: 1px solid rgba(16,185,129,0.3);">
                 <span class="badge-pulse"></span>
                 OCR & Analytics Core Active
             </span>
@@ -271,32 +339,32 @@
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">📥 Document Ingestion</h2>
-                <span style="font-size: 11px; color: #818cf8; font-weight: 600;">PDF • DOCX • TXT</span>
+                <span style="font-size: 11px; color: #4f46e5; font-weight: 700;">PDF • DOCX • TXT</span>
             </div>
 
             <!-- PDF Template Download Banner -->
-            <div style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15)); border: 1px solid rgba(129,140,248,0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+            <div style="background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.08)); border: 1px solid rgba(99,102,241,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
                 <div>
-                    <div style="font-size: 12px; font-weight: 700; color: #c084fc;">🏥 Vasundhara Hospital Format</div>
-                    <div style="font-size: 11px; color: #94a3b8;">Real clinical template matching specified structure</div>
+                    <div style="font-size: 13px; font-weight: 800; color: #7e22ce;">🏥 Vasundhara Hospital Format</div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Real clinical template matching specified structure</div>
                 </div>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <a href="/api/download/sunita-pdf" download="Vasundhara_Hospital_Alzheimer_Report_Sunita_Sharma.pdf" style="text-decoration: none; background: #059669; color: white; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    <a href="/api/download/sunita-pdf" download="Vasundhara_Hospital_Alzheimer_Report_Sunita_Sharma.pdf" style="text-decoration: none; background: #059669; color: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 4px 10px rgba(5,150,105,0.2);">
                         📄 Sunita Sharma (Visit 1 PDF)
                     </a>
-                    <a href="/api/download/sunita-followup-pdf" download="Vasundhara_Hospital_Alzheimer_Report_Sunita_Sharma_FollowUp.pdf" style="text-decoration: none; background: #dc2626; color: white; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    <a href="/api/download/sunita-followup-pdf" download="Vasundhara_Hospital_Alzheimer_Report_Sunita_Sharma_FollowUp.pdf" style="text-decoration: none; background: #dc2626; color: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 4px 10px rgba(220,38,38,0.2);">
                         🚨 Sunita Sharma (Follow-Up PDF)
                     </a>
-                    <a href="/api/download/sunita-pptx" download="Vasundhara_Hospital_Alzheimer_Case_Presentation_Sunita_Sharma.pptx" style="text-decoration: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    <a href="/api/download/sunita-pptx" download="Vasundhara_Hospital_Alzheimer_Case_Presentation_Sunita_Sharma.pptx" style="text-decoration: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 4px 10px rgba(245,158,11,0.2);">
                         📊 Sunita Case PPT
                     </a>
-                    <a href="/api/download/sample-pdf" download="Vasundhara_Hospital_Alzheimer_Report_Sample.pdf" style="text-decoration: none; background: #6366f1; color: white; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    <a href="/api/download/sample-pdf" download="Vasundhara_Hospital_Alzheimer_Report_Sample.pdf" style="text-decoration: none; background: #4f46e5; color: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 4px 10px rgba(79,70,229,0.2);">
                         📥 Rajesh (Baseline)
                     </a>
-                    <a href="/api/download/worsening-pdf" download="Vasundhara_Hospital_Alzheimer_Report_Worsening_Case.pdf" style="text-decoration: none; background: #b91c1c; color: white; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    <a href="/api/download/worsening-pdf" download="Vasundhara_Hospital_Alzheimer_Report_Worsening_Case.pdf" style="text-decoration: none; background: #b91c1c; color: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 4px 10px rgba(185,28,28,0.2);">
                         🚨 Rajesh (Worsening)
                     </a>
-                    <a href="/api/download/template-pdf" download="Vasundhara_Hospital_Alzheimer_Report_Template.pdf" style="text-decoration: none; background: rgba(255,255,255,0.1); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                    <a href="/api/download/template-pdf" download="Vasundhara_Hospital_Alzheimer_Report_Template.pdf" style="text-decoration: none; background: rgba(0,0,0,0.05); color: #475569; border: 1px solid rgba(0,0,0,0.1); padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
                         📄 Blank Template
                     </a>
                 </div>
@@ -305,28 +373,28 @@
             <!-- Upload Area -->
             <div id="dropzone" class="dropzone" onclick="document.getElementById('fileInput').click()">
                 <div class="dropzone-icon">📁</div>
-                <strong style="font-size: 14px; color: #f1f5f9;">Drop real PDF, PPTX or Word Doc here</strong>
-                <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">or click to browse from device (supports live PDF OCR)</p>
+                <strong style="font-size: 14px; color: #0f172a;">Drop real PDF, PPTX or Word Doc here</strong>
+                <p style="font-size: 12px; color: #64748b; margin-top: 4px;">or click to browse from device (supports live PDF OCR)</p>
                 <input id="fileInput" type="file" accept=".pdf,.docx,.doc,.txt" style="display: none;" onchange="handleFileSelect(event)" />
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                <span style="font-size: 12px; font-weight: 600; color: #94a3b8;">Or load clinical demo presets:</span>
+                <span style="font-size: 12px; font-weight: 700; color: #64748b;">Or load clinical demo presets:</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-                <button class="btn-preset active" style="border-color: #818cf8; color: #c084fc; font-weight: 700;" onclick="loadSample(7)">⭐ Vasundhara Hospital Format</button>
+                <button class="btn-preset active" style="border-color: rgba(79,70,229,0.4); color: #4f46e5; background: rgba(79,70,229,0.1);" onclick="loadSample(7)">⭐ Vasundhara Hospital Format</button>
                 <button class="btn-preset" onclick="loadSample(1)">3-Visit Longitudinal</button>
                 <button class="btn-preset" onclick="loadSample(2)">Rapid Early Onset</button>
                 <button class="btn-preset" onclick="loadSample(3)">Mild MCI</button>
             </div>
-            <div class="btn-group" style="margin-bottom: 12px;">
-                <button class="btn-preset" style="border-color: #10b981; color: #6ee7b7; font-size: 11px; padding: 4px 8px;" onclick="loadSample(6)">🌸 Sunita (Visit 1: 21/30)</button>
-                <button class="btn-preset" style="border-color: #f43f5e; color: #fda4af; font-size: 11px; padding: 4px 8px;" onclick="loadSample(7)">🚨 Sunita (Follow-Up: 15/30)</button>
-                <button class="btn-preset" style="border-color: #a855f7; color: #d8b4fe; font-size: 11px; padding: 4px 8px;" onclick="loadSample(4)">⭐ Rajesh (Visit 1: 19/30)</button>
-                <button class="btn-preset" style="border-color: #ef4444; color: #fca5a5; font-size: 11px; padding: 4px 8px;" onclick="loadSample(5)">🚨 Rajesh (Follow-Up: 13/30)</button>
+            <div class="btn-group" style="margin-bottom: 14px;">
+                <button class="btn-preset" style="border-color: rgba(16,185,129,0.3); color: #059669; font-size: 11px; padding: 6px 10px;" onclick="loadSample(6)">🌸 Sunita (Visit 1: 21/30)</button>
+                <button class="btn-preset" style="border-color: rgba(225,29,72,0.3); color: #e11d48; font-size: 11px; padding: 6px 10px;" onclick="loadSample(7)">🚨 Sunita (Follow-Up: 15/30)</button>
+                <button class="btn-preset" style="border-color: rgba(126,34,206,0.3); color: #7e22ce; font-size: 11px; padding: 6px 10px;" onclick="loadSample(4)">⭐ Rajesh (Visit 1: 19/30)</button>
+                <button class="btn-preset" style="border-color: rgba(220,38,38,0.3); color: #dc2626; font-size: 11px; padding: 6px 10px;" onclick="loadSample(5)">🚨 Rajesh (Follow-Up: 13/30)</button>
             </div>
 
-            <label style="font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 6px; display: block;">Report Extracted Text / Edit:</label>
+            <label style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 8px; display: block;">Report Extracted Text / Edit:</label>
             <textarea id="reportText" rows="11" placeholder="Paste or view Alzheimer's diagnosis report text here..."></textarea>
 
             <button id="analyzeBtn" class="btn-primary" onclick="triggerAnalysis()">
@@ -338,43 +406,43 @@
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">📊 Longitudinal Progression Analysis</h2>
-                <span id="statusBadge" style="font-size: 12px; color: #94a3b8;">Awaiting Document</span>
+                <span id="statusBadge" style="font-size: 12px; color: #64748b; font-weight: 700;">Awaiting Document</span>
             </div>
 
-            <div id="emptyState" style="text-align: center; padding: 60px 20px; color: #64748b;">
+            <div id="emptyState" style="text-align: center; padding: 60px 20px; color: #475569;">
                 <div style="font-size: 48px; margin-bottom: 12px;">🧠</div>
-                <h3 style="color: #94a3b8; font-size: 16px;">No Report Analyzed Yet</h3>
-                <p style="font-size: 13px; margin-top: 6px; max-width: 360px; margin-left: auto; margin-right: auto;">
+                <h3 style="color: #475569; font-size: 16px;">No Report Analyzed Yet</h3>
+                <p style="font-size: 13px; margin-top: 6px; max-width: 360px; margin-left: auto; margin-right: auto; line-height: 1.5;">
                     Upload a real Alzheimer's diagnostic PDF or choose a demo preset on the left to compute disease velocity and staging comparisons.
                 </p>
             </div>
 
             <div id="loadingState" style="display: none; text-align: center; padding: 60px 20px;">
                 <div style="font-size: 40px; animation: pulse 1s infinite;">⚡</div>
-                <h3 style="color: #c084fc; font-size: 16px; margin-top: 12px;">Extracting Medical Data & Biomarkers...</h3>
-                <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Computing longitudinal MMSE decline rate & staging deltas</p>
+                <h3 style="color: #7e22ce; font-size: 16px; margin-top: 12px;">Extracting Medical Data & Biomarkers...</h3>
+                <p style="font-size: 13px; color: #64748b; margin-top: 4px;">Computing longitudinal MMSE decline rate & staging deltas</p>
             </div>
 
             <div id="resultsPanel" class="results-panel">
                 <!-- Severity & Velocity Banner -->
                 <div id="severityBanner" class="severity-banner">
                     <div>
-                        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85;">How Serious Is The Condition?</span>
-                        <h2 id="currentStageText" style="font-size: 20px; font-weight: 800; margin-top: 2px;">Moderate Memory Loss</h2>
-                        <span id="patientInfoText" style="font-size: 12px; opacity: 0.85;">Patient Details</span>
+                        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; color: #475569;">How Serious Is The Condition?</span>
+                        <h2 id="currentStageText" style="font-size: 20px; font-weight: 800; margin-top: 2px; color: #0f172a;">Moderate Memory Loss</h2>
+                        <span id="patientInfoText" style="font-size: 12px; opacity: 0.85; color: #475569;">Patient Details</span>
                     </div>
                     <div style="text-align: right;">
-                        <span style="font-size: 11px; text-transform: uppercase; opacity: 0.85;">How Fast Is It Getting Worse?</span>
-                        <h3 id="velocityRateText" style="font-size: 18px; font-weight: 800; color: #f43f5e; margin-top: 2px;">Worsening Faster Than Normal</h3>
-                        <span id="annualDropText" style="font-size: 12px; opacity: 0.85;">Dropping ~4 points/year</span>
+                        <span style="font-size: 11px; text-transform: uppercase; opacity: 0.85; color: #475569;">How Fast Is It Getting Worse?</span>
+                        <h3 id="velocityRateText" style="font-size: 18px; font-weight: 800; color: #e11d48; margin-top: 2px;">Worsening Faster Than Normal</h3>
+                        <span id="annualDropText" style="font-size: 12px; opacity: 0.85; color: #475569;">Dropping ~4 points/year</span>
                     </div>
                 </div>
 
                 <!-- Velocity Gauge -->
                 <div style="margin-bottom: 18px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8;">
-                        <span>Memory Decline Pace:</span>
-                        <span id="velocitySummarySpan" style="font-weight: 600; color: #f1f5f9;">Pace summary</span>
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;">
+                        <span style="font-weight: 700;">Memory Decline Pace:</span>
+                        <span id="velocitySummarySpan" style="font-weight: 800; color: #0f172a;">Pace summary</span>
                     </div>
                     <div class="speed-gauge">
                         <div id="speedFill" class="speed-fill" style="width: 75%;"></div>
@@ -382,7 +450,7 @@
                 </div>
 
                 <!-- Longitudinal Timeline Comparison Table -->
-                <h3 style="font-size: 14px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">
+                <h3 style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">
                     📅 Medical Check-Up History & Memory Test Scores
                 </h3>
                 <div style="overflow-x: auto; margin-bottom: 16px;">
@@ -404,18 +472,18 @@
                 <!-- Clinical Comparison & Everyday Impact -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                     <div class="metric-box">
-                        <h4 style="font-size: 13px; font-weight: 700; color: #818cf8; margin-bottom: 6px;">🔍 Memory & Thinking Changes</h4>
-                        <p id="declineOverview" style="font-size: 12.5px; color: #cbd5e1; line-height: 1.5;"></p>
+                        <h4 style="font-size: 13px; font-weight: 800; color: #4f46e5; margin-bottom: 6px;">🔍 Memory & Thinking Changes</h4>
+                        <p id="declineOverview" style="font-size: 12.5px; color: #475569; line-height: 1.5; font-weight: 500;"></p>
                     </div>
                     <div class="metric-box">
-                        <h4 style="font-size: 13px; font-weight: 700; color: #ec4899; margin-bottom: 6px;">🏡 Everyday Life & Independence</h4>
-                        <p id="functionalImpact" style="font-size: 12.5px; color: #cbd5e1; line-height: 1.5;"></p>
+                        <h4 style="font-size: 13px; font-weight: 800; color: #db2777; margin-bottom: 6px;">🏡 Everyday Life & Independence</h4>
+                        <p id="functionalImpact" style="font-size: 12.5px; color: #475569; line-height: 1.5; font-weight: 500;"></p>
                     </div>
                 </div>
 
                 <!-- Caregiver Protocol -->
-                <div class="metric-box" style="margin-top: 14px; background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.25);">
-                    <h4 style="font-size: 13px; font-weight: 700; color: #c084fc; margin-bottom: 8px;">🛡️ Family Action Plan & Home Safety Steps</h4>
+                <div class="metric-box" style="margin-top: 14px; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.25);">
+                    <h4 style="font-size: 13px; font-weight: 800; color: #7e22ce; margin-bottom: 8px;">🛡️ Family Action Plan & Home Safety Steps</h4>
                     <div id="caregiverList"></div>
                 </div>
             </div>
@@ -982,21 +1050,21 @@ Date: 12 / 05 / 2027\`
             const hospStr = data.patient_summary?.hospital || '';
             const timeStr = data.patient_summary?.timeframe || '';
 
-            document.getElementById('patientInfoText').innerHTML = \`
+            document.getElementById('patientInfoText').innerHTML = `
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
                     <span style="opacity: 0.85;">Patient:</span>
-                    <a href="/patient-history?name=\${encodeURIComponent(patientName)}" target="_blank"
-                       style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(14,165,233,0.25), rgba(168,85,247,0.25)); border: 1px solid rgba(56,189,248,0.5); color: #38bdf8; font-weight: 800; text-decoration: none; padding: 3px 10px; border-radius: 8px; font-size: 13px; transition: all 0.2s;"
-                       onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(56,189,248,0.3)';"
+                    <a href="/patient-history?name=${encodeURIComponent(patientName)}" target="_blank"
+                       style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(14,165,233,0.1), rgba(168,85,247,0.1)); border: 1px solid rgba(56,189,248,0.3); color: #0284c7; font-weight: 800; text-decoration: none; padding: 3px 10px; border-radius: 8px; font-size: 13px; transition: all 0.2s;"
+                       onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(56,189,248,0.2)';"
                        onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
-                        <span>👤 \${patientName}</span>
+                        <span>👤 ${patientName}</span>
                         <span style="font-size: 10px; background: #0284c7; color: white; padding: 1px 7px; border-radius: 9999px; font-weight: 700;">
                             📊 Trajectory & 270° Speedometer ↗
                         </span>
                     </a>
-                    <span style="opacity: 0.85; font-size: 12px;">• \${ageStr} \${genderStr ? '• ' + genderStr : ''} \${hospStr ? '• ' + hospStr : ''} \${timeStr ? '• ' + timeStr : ''}</span>
+                    <span style="opacity: 0.85; font-size: 12px;">• ${ageStr} ${genderStr ? '• ' + genderStr : ''} ${hospStr ? '• ' + hospStr : ''} ${timeStr ? '• ' + timeStr : ''}</span>
                 </div>
-            \`;
+            `;
 
             document.getElementById('velocityRateText').textContent = data.progression_velocity?.rate || 'Standard Progression';
             document.getElementById('annualDropText').textContent = data.progression_velocity?.annual_drop_estimate || '';
@@ -1015,14 +1083,14 @@ Date: 12 / 05 / 2027\`
                     const mmseClass = (visit.mmse >= 24) ? 'score-high' : (visit.mmse >= 19) ? 'score-mid' : 'score-low';
                     const mocaClass = (visit.moca >= 22) ? 'score-high' : (visit.moca >= 17) ? 'score-mid' : 'score-low';
 
-                    tr.innerHTML = \`
-                        <td style="font-weight: 700; color: #818cf8;">\${visit.visit_date || 'Visit'}</td>
-                        <td>\${visit.stage || 'Clinical Stage'}</td>
-                        <td><span class="score-pill \${mmseClass}">\${visit.mmse != null ? visit.mmse + '/30' : '-'}</span></td>
-                        <td><span class="score-pill \${mocaClass}">\${visit.moca != null ? visit.moca + '/30' : '-'}</span></td>
-                        <td style="font-weight: 600;">\${visit.cdr != null ? 'CDR ' + visit.cdr : '-'}</td>
-                        <td style="font-size: 12px; color: #94a3b8;">\${visit.imaging_biomarkers || visit.clinical_impression || '-'}</td>
-                    \`;
+                    tr.innerHTML = `
+                        <td style="font-weight: 800; color: #4f46e5;">${visit.visit_date || 'Visit'}</td>
+                        <td style="font-weight: 500;">${visit.stage || 'Clinical Stage'}</td>
+                        <td><span class="score-pill ${mmseClass}">${visit.mmse != null ? visit.mmse + '/30' : '-'}</span></td>
+                        <td><span class="score-pill ${mocaClass}">${visit.moca != null ? visit.moca + '/30' : '-'}</span></td>
+                        <td style="font-weight: 700; color: #334155;">${visit.cdr != null ? 'CDR ' + visit.cdr : '-'}</td>
+                        <td style="font-size: 12.5px; color: #64748b; line-height: 1.4;">${visit.imaging_biomarkers || visit.clinical_impression || '-'}</td>
+                    `;
                     tbody.appendChild(tr);
                 });
             }
